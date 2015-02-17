@@ -13,14 +13,14 @@ module Assembly where
 import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Applicative
 import           Data.Foldable
-import           Data.Traversable
 import qualified Data.List
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid
+import           Data.Traversable
 import           Lens.Family hiding (Constant)
 import           LinearScan
-import           DSL
-import           Hoopl
+import           LinearScan.Hoopl
+import           LinearScan.Hoopl.DSL
 
 default (Int)
 

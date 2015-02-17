@@ -7,12 +7,12 @@ import           Assembly
 import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Exception
 import           Control.Monad.Trans.State (evalState)
-import           DSL
 import           Data.Foldable
 import qualified Data.Map as M
 import           Data.Maybe (fromMaybe)
-import           Hoopl
 import           LinearScan
+import           LinearScan.Hoopl
+import           LinearScan.Hoopl.DSL
 import           Test.Hspec
 
 asmTest :: Int -> Program (Node IRVar) -> Program (Node PhysReg) -> Expectation

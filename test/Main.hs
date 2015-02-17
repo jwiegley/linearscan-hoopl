@@ -2,7 +2,7 @@ module Main where
 
 import AsmTest
 import Assembly
-import DSL
+import LinearScan.Hoopl.DSL
 import Test.Hspec
 
 -- | The objective of these tests is to present a program to the register

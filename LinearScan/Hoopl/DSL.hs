@@ -1,4 +1,4 @@
-module DSL where
+module LinearScan.Hoopl.DSL where
 
 import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Applicative

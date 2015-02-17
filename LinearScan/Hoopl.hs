@@ -5,7 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Hoopl where
+module LinearScan.Hoopl where
 
 import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Applicative
