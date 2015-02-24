@@ -27,6 +27,8 @@ class HooplNode n1
     mkSaveOps    :: PhysReg     -> Maybe VarId -> State s [n2 O O]
     mkRestoreOps :: Maybe VarId -> PhysReg     -> State s [n2 O O]
 
+    op1ToString  :: n1 e x -> String
+
 data NodeV n = NodeCO { getNodeCO :: n C O }
              | NodeOO { getNodeOO :: n O O }
              | NodeOC { getNodeOC :: n O C }
@@ -72,6 +74,11 @@ opInfo = OpInfo
            NodeCO n -> [NodeCO (setRegisters m n)]
            NodeOO n -> [NodeOO (setRegisters m n)]
            NodeOC n -> [NodeOC (setRegisters m n)]
+
+    , showOp1 = \node -> case node of
+           NodeCO n -> op1ToString n
+           NodeOO n -> op1ToString n
+           NodeOC n -> op1ToString n
     }
 
 data SpillStack = SpillStack

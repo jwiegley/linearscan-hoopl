@@ -1,6 +1,6 @@
 name:          linearscan-hoopl
 version:       0.1.0.0
-synopsis:      Make it easy to use the linearscan register allocator with Hoopl
+synopsis:      Makes it easy to use the linearscan register allocator with Hoopl
 homepage:      http://github.com/jwiegley/linearscan-hoopl
 license:       BSD3
 license-file:  LICENSE

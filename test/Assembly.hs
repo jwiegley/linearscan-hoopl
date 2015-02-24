@@ -196,6 +196,8 @@ instance NodeAlloc SpillStack (Node IRVar) (Node PhysReg) where
     mkRestoreOps src dst = do off <- getStackSlot src
                               return [Restore off dst]
 
+    op1ToString = show
+
 var :: Int -> IRVar
 var = VirtualIV
 
