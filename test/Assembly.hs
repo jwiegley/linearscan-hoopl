@@ -184,8 +184,9 @@ instance NodeAlloc SpillStack (Node IRVar) (Node PhysReg) where
         go :: [(Int, PhysReg)] -> IRVar -> PhysReg
         go _ (PhysicalIV r) = r
         go m (VirtualIV n)  =
-            fromMaybe (error $ "Allocation failed for variable " ++ show n)
-                      (Data.List.lookup n m)
+            fromMaybe
+                (-1) -- (error $ "Allocation failed for variable " ++ show n)
+                (Data.List.lookup n m)
 
     mkMoveOps src dst = return [Move src dst]
     mkSwapOps src dst = liftA2 (++) (mkRestoreOps Nothing dst)

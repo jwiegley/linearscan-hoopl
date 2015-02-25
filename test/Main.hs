@@ -22,7 +22,7 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add r0 r1 r2
+        add r0 r1 r0
         return_
 
   it "Single, repeated instruction" $ asmTest 32
@@ -51,35 +51,21 @@ sanityTests = do
         add r0 r1 r2
         return_
 
-  it "More variables used than registers" $ asmTest 32
+  it "More variables used than registers" $ asmTest 6
     (label "entry" $ do
         add v0 v1 v2
         add v3 v4 v5
         add v6 v7 v8
         add v9 v10 v11
         add v12 v13 v14
-        add v15 v16 v17
-        add v18 v19 v20
-        add v21 v22 v23
-        add v24 v25 v26
-        add v27 v28 v29
-        add v30 v31 v32
-        add v33 v34 v35
         return_) $
 
     label "entry" $ do
-        add r0 r1 r24
-        add r2 r3 r0
-        add r4 r5 r1
-        add r6 r7 r2
-        add r8 r9 r3
-        add r10 r11 r4
-        add r12 r13 r5
-        add r14 r15 r6
-        add r16 r17 r7
-        add r18 r19 r8
-        add r20 r21 r9
-        add r22 r23 r10
+        add r0 r1 r0
+        add r2 r3 r1
+        add r4 r5 r2
+        add r6 r7 r3
+        add r8 r9 r4
         return_
 
   it "Single long-lived variable" $ asmTest 32
