@@ -54,12 +54,13 @@ data Node v e x where
     Alloc     :: Maybe (Src v) -> Dst v -> Node v O O
     Reclaim   :: Src v -> Node v O O
     Instr     :: Instruction v -> Node v O O
-    Call      :: CConv -> Instruction v -> Node v O O
+    Call      :: CConv -> Int -> Node v O O
     LoadConst :: Int -> Dst v -> Node v O O
     Move      :: Src v -> Dst v -> Node v O O
     Copy      :: Src v -> Dst v -> Node v O O
     Save      :: Src v -> Dst Int -> Node v O O
     Restore   :: Src Int -> Dst v -> Node v O O
+    Trace     :: String -> Node v O O
 
     Jump        :: Label -> Node v O C
     Branch      :: Test -> v -> Success Label -> Failure Label -> Node v O C
@@ -74,12 +75,13 @@ instance Show v => Show (Node v e x) where
                              ++ " " ++ show x2
     show (Reclaim v)       = "\t@reclaim " ++ show v
     show (Instr i)         = "\t" ++ show i
-    show (Call c i)        = "\t@call " ++ show c ++ " " ++ show i
-    show (LoadConst c v)   = "\t@lc " ++ show v ++ " " ++ show c
+    show (Call c l)        = "\t@call " ++ show c ++ " " ++ show l
+    show (LoadConst _c v)  = "\t@lc " ++ show v -- ++ " " ++ show c
     show (Move x1 x2)      = "\t@mvrr " ++ show x1 ++ " " ++ show x2
     show (Copy x1 x2)      = "\t@cprr " ++ show x1 ++ " " ++ show x2
     show (Save src dst)    = "\t@save " ++ " " ++ show src ++ " " ++ show dst
     show (Restore src dst) = "\t@restore " ++ " " ++ show src ++ " " ++ show dst
+    show (Trace str)       = "\tTRACE " ++ " " ++ show str
     show (Jump l)          = "\t@jmp " ++ show l
     show (Branch c v t f)  = "\t@b" ++ show c ++ " " ++ show v
                           ++ " " ++ show t ++ "; @jmp " ++ show f
@@ -107,8 +109,9 @@ variables f = go
     go (Copy src dst)             = Copy <$> f src <*> f dst
     go (Save src x)               = Save <$> f src <*> pure x
     go (Restore x src)            = Restore x <$> f src
+    go (Trace str)                = pure $ Trace str
     go (Branch x1 cond x2 x3)     = Branch x1 <$> f cond <*> pure x2 <*> pure x3
-    go (Call cc i)                = Call cc <$> traverse f i
+    go (Call cc i)                = pure $ Call cc i
     go (ReturnInstr liveInRegs i) = ReturnInstr liveInRegs <$> traverse f i
     go (Label x)                  = pure $ Label x
     go (Jump x)                   = pure $ Jump x
@@ -122,6 +125,9 @@ nop = bodyNode $ Instr Nop
 move :: v -> v -> BodyNode (Node v)
 move x0 x1 = bodyNode $ Move x0 x1
 
+call :: Int -> BodyNode (Node v)
+call dst = bodyNode $ Call InlineC dst
+
 lc :: v -> BodyNode (Node v)
 lc x0 = bodyNode $ LoadConst 0 x0
 
@@ -130,6 +136,9 @@ save r dst = bodyNode $ Save r dst
 
 restore :: Src PhysReg -> PhysReg -> BodyNode (Node PhysReg)
 restore src r = bodyNode $ Restore src r
+
+trace :: String -> BodyNode (Node v)
+trace str = bodyNode $ Trace str
 
 branch :: Test -> v -> String -> String -> EndNode (Node v)
 branch tst v good bad =
@@ -158,9 +167,11 @@ instance NodeAlloc SpillStack (Node IRVar) (Node PhysReg) where
         go (Label _)         = mempty
         go (Instr i)         = fromInstr i
         go (Jump _)          = mempty
+        go (Call _ _)        = mempty
         go (Move src dst)    = mkv Input src <> mkv Output dst
         go (LoadConst _ v)   = mkv Output v
         go (Branch _ v _ _)  = mkv Input v
+        go (Trace _)         = mempty
         go (ReturnInstr _ i) = fromInstr i
         go n = error $ "getReferences: unhandled node: " ++ show n
 

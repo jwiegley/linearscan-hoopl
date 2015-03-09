@@ -18,7 +18,7 @@ import           Test.Hspec
 asmTest :: Int -> Program (Node IRVar) -> Program (Node PhysReg) -> Expectation
 asmTest regs (compile "entry" -> (prog, entry))
              (compile "entry" -> (result, _)) =
-    go $ M.fromList $ zip (Prelude.map entryLabel blocks) [(1 :: Int)..]
+    go $ M.fromList $ zip (Prelude.map entryLabel blocks) [(0 :: Int)..]
   where
     GMany NothingO body NothingO = prog
     blocks = postorder_dfs_from body entry

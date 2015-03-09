@@ -13,6 +13,8 @@ main :: IO ()
 main = hspec $ do
   describe "Sanity tests" sanityTests
   describe "Block tests" blockTests
+  describe "Call tests" callTests
+  describe "Loop tests" loopTests
 
 sanityTests :: SpecWith ()
 sanityTests = do
@@ -22,7 +24,7 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add r0 r1 r0
+        add 0 1 0
         return_
 
   it "Single, repeated instruction" $ asmTest 32
@@ -33,9 +35,9 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add r0 r1 r2
-        add r0 r1 r2
-        add r0 r1 r2
+        add 0 1 2
+        add 0 1 2
+        add 0 1 2
         return_
 
   it "Multiple instructions" $ asmTest 32
@@ -46,13 +48,23 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add r0 r1 r2
-        add r0 r1 r3
-        add r0 r1 r2
+        add 0 1 2
+        add 0 1 3
+        add 0 1 2
         return_
 
   it "More variables used than registers" $ asmTest 6
     (label "entry" $ do
+        lc v0
+        lc v1
+        lc v3
+        lc v4
+        lc v6
+        lc v7
+        lc v9
+        lc v10
+        lc v12
+        lc v13
         add v0 v1 v2
         add v3 v4 v5
         add v6 v7 v8
@@ -61,12 +73,31 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add r0 r1 r0
-        add r2 r3 r1
-        add r4 r5 r2
-        add r6 r7 r3
-        add r8 r9 r4
-        return_
+	lc 0
+	lc 1
+	lc 2
+	lc 3
+	lc 4
+	lc 5
+	save  4 0
+	lc 4
+	save  4 8
+	lc 4
+	save  4 16
+	lc 4
+	save  4 24
+	lc 4
+	add 0 1 0
+	add 2 3 1
+	restore  0 3
+	add 3 5 2
+	save  0 32
+	restore  8 5
+	restore  16 0
+	add 5 0 3
+	restore  24 5
+	add 5 4 0
+	return_
 
   it "Single long-lived variable" $ asmTest 32
     (label "entry" $ do
@@ -77,10 +108,10 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add r0 r1 r5
-        add r0 r2 r1
-        add r0 r3 r2
-        add r0 r4 r3
+        add 0 1 1
+        add 0 2 2
+        add 0 3 3
+        add 0 4 0
         return_
 
   it "Two long-lived variables" $ asmTest 32
@@ -92,10 +123,10 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add r0 r1 r3
-        add r0 r2 r1
-        add r0 r2 r4
-        add r0 r2 r5
+        add 0 1 1
+        add 0 2 3
+        add 0 2 4
+        add 0 2 0
         return_
 
   it "One variable with a long interval" $ asmTest 32
@@ -115,18 +146,18 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add r0 r1 r23
-        add r2 r3 r1
-        add r4 r5 r2
-        add r6 r7 r3
-        add r8 r9 r4
-        add r10 r11 r5
-        add r12 r13 r6
-        add r14 r15 r7
-        add r16 r17 r8
-        add r18 r19 r9
-        add r20 r21 r10
-        add r0 r22 r11
+        add 0 1 1
+        add 2 3 2
+        add 4 5 3
+        add 6 7 4
+        add 8 9 5
+        add 10 11 6
+        add 12 13 7
+        add 14 15 8
+        add 16 17 9
+        add 18 19 10
+        add 20 21 11
+        add 0 22 0
         return_
 
   it "Many variables with long intervals" $ asmTest 32
@@ -154,26 +185,26 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add r0 r1 r20
-        add r2 r3 r21
-        add r4 r5 r22
-        add r6 r7 r23
-        add r8 r9 r24
-        add r10 r11 r25
-        add r12 r13 r26
-        add r14 r15 r27
-        add r16 r17 r28
-        add r18 r19 r29
-        add r0 r1 r20
-        add r2 r3 r21
-        add r4 r5 r22
-        add r6 r7 r23
-        add r8 r9 r24
-        add r10 r11 r25
-        add r12 r13 r26
-        add r14 r15 r27
-        add r16 r17 r28
-        add r18 r19 r29
+        add 0 1 20
+        add 2 3 21
+        add 4 5 22
+        add 6 7 23
+        add 8 9 24
+        add 10 11 25
+        add 12 13 26
+        add 14 15 27
+        add 16 17 28
+        add 18 19 29
+        add 0 1 20
+        add 2 3 21
+        add 4 5 22
+        add 6 7 23
+        add 8 9 24
+        add 10 11 25
+        add 12 13 26
+        add 14 15 27
+        add 16 17 28
+        add 18 19 29
         return_
 
   it "Spilling one variable" $ asmTest 32
@@ -203,57 +234,104 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add r0 r1 r22
-        add r2 r3 r23
-        add r4 r5 r24
-        add r6 r7 r25
-        add r8 r9 r26
-        add r10 r11 r27
-        add r12 r13 r28
-        add r14 r15 r29
-        add r16 r17 r30
-        add r18 r19 r31
+        add 0 1 22
+        add 2 3 23
+        add 4 5 24
+        add 6 7 25
+        add 8 9 26
+        add 10 11 27
+        add 12 13 28
+        add 14 15 29
+        add 16 17 30
+        add 18 19 31
 
         -- When we reach the 32nd variable considered (which happens to be
         -- v30), we must spill a register because there are not 32 registers.
         -- So we pick the first register, counting from 0, whose next use
         -- position is the furthest from this position.  That happens to be
-        -- r18, which is next used at position 41.
-        save r18 0
-        add r20 r21 r18
-        add r0 r1 r22
-        add r2 r3 r23
-        add r4 r5 r24
-        add r6 r7 r25
-        add r8 r9 r26
-        add r10 r11 r27
-        add r12 r13 r28
-        add r14 r15 r29
-        add r16 r17 r30
+        -- 18, which is next used at position 41.
+        save 18 0
+        add 20 21 18
+        add 0 1 22
+        add 2 3 23
+        add 4 5 24
+        add 6 7 25
+        add 8 9 26
+        add 10 11 27
+        add 12 13 28
+        add 14 15 29
+        add 16 17 30
 
-        -- When it comes time to reload v29 (which had been allocated to r18),
-        -- we pick the first available register which happens to be r0 in this
+        -- When it comes time to reload v29 (which had been allocated to 18),
+        -- we pick the first available register which happens to be 0 in this
         -- case.
-        restore 0 r0
-        add r0 r19 r31
-        add r20 r21 r18
+        restore 0 0
+        add 0 19 31
+        add 20 21 18
         return_
 
-  it "Inserts only necessary saves and restores" $ asmTest 4
+  it "Higher register pressure" $ asmTest 3
     (label "entry" $ do
+        lc v0
+        lc v1
         add v0 v1 v2
         add v2 v1 v3
         add v3 v2 v4
-        add v4 v1 v0
+        add v4 v3 v5
+        add v2 v3 v6
+        add v4 v5 v7
+        add v6 v7 v8
+        add v8 v1 v0
         return_) $
 
     label "entry" $ do
-        add r1 r0 r2
-        add r2 r0 r3
-        save r0 0
-        add r3 r2 r0
-        restore 0 r2
-        add r0 r2 r1
+	lc 0
+	lc 1
+	add 0 1 2
+	add 2 1 0
+	save  1 0
+	add 0 2 1
+	save  2 8
+	add 1 0 2
+	save  1 16
+	restore  8 1
+	add 1 0 0
+	save  0 24
+	restore  16 0
+	add 0 2 1
+	restore  24 2
+	add 2 1 0
+	restore  0 1
+	add 0 1 0
+	return_
+
+  it "Inserts necessary saves and restores" $ asmTest 4
+    (label "entry" $ do
+        lc v0
+        lc v1
+        add v0 v1 v2
+        add v2 v1 v3
+        add v3 v2 v4
+        add v4 v3 v5
+        add v2 v3 v6
+        add v4 v5 v7
+        add v6 v7 v8
+        add v8 v1 v0
+        return_) $
+
+    label "entry" $ do
+        lc 0
+        lc 1
+        add 0 1 2
+        add 2 1 3
+        add 3 2 0
+        save 1 0
+        add 0 3 1
+        add 2 3 2
+        add 0 1 0
+        add 2 0 0
+        restore 0 1
+        add 0 1 0
         return_
 
 blockTests :: SpecWith ()
@@ -275,31 +353,33 @@ blockTests = do
             return_) $
 
     do label "entry" $ do
-           add r0 r1 r3
+           add 0 1 0
            jump "L2"
 
        label "L2" $ do
-           add r3 r2 r0
-           add r3 r0 r1
+           add 0 2 1
+           add 0 1 1
            jump "L3"
 
        label "L3" $ do
-           add r3 r1 r0
-           add r3 r0 r1
-           add r3 r1 r0
+           add 0 1 1
+           add 0 1 1
+           add 0 1 0
            return_
 
-  it "Inserts resolving moves" $ asmTest 4
+  it "Inserts resolving moves" $ asmTest 3
     (do label "entry" $ do
+            lc v0
+            lc v1
             add v0 v1 v2
             branch Zero v2 "B3" "B2"
 
         label "B2" $ do
             add v1 v2 v3
-            add v0 v0 v4
-            add v0 v0 v5
-            add v0 v4 v6
-            add v0 v5 v6
+            add v0 v3 v4
+            add v0 v4 v5
+            add v4 v5 v6
+            add v6 v3 v7
             jump "B4"
 
         label "B3" $ do
@@ -311,30 +391,33 @@ blockTests = do
             return_) $
 
     do label "entry" $ do
-           add r0 r1 r2
-           branch Zero r2 "B2" "B3"
+           lc 0
+           lc 1
+           add 0 1 2
+           branch Zero 2 "B2" "B3"
 
        label "B2" $ do
-           add r1 r2 r3
+           add 1 2 0
+           move 0 1
            jump "B4"
 
        label "B3" $ do
-           add r1 r2 r3
-           save r3 16
-           save r2 8
-           save r1 0
-           add r0 r0 r1
-           add r0 r0 r2
-           add r0 r1 r3
-           add r0 r2 r3
-           restore 16 r3
+           save 0 0
+           add 1 2 0
+           restore 0 2
+           add 2 0 1
+           save 0 8
+           add 2 1 0
+           add 1 0 0
+           restore 8 1
+           add 0 1 0
            jump "B4"
 
        label "B4" $ do
-           add r3 r3 r0
+           add 1 1 2
            return_
 
-  it "Inserts resolving moves another way" $ asmTest 4
+  it "When resolving moves are not needed" $ asmTest 4
     (do label "entry" $ do
             add v0 v1 v2
             branch Zero v2 "B3" "B2"
@@ -356,26 +439,23 @@ blockTests = do
             return_) $
 
     do label "entry" $ do
-           add r0 r1 r2
-           branch Zero r2 "B2" "B3"
+           add 0 1 2
+           branch Zero 2 "B2" "B3"
 
        label "B2" $ do
-           add r1 r2 r3
-           save r3 0
-           add r0 r0 r1
-           add r0 r0 r2
-           add r0 r1 r3
-           add r0 r2 r3
-           restore 0 r1
+           add 1 2 3
+           add 0 0 1
+           add 0 0 2
+           add 0 1 1
+           add 0 2 1
            jump "B4"
 
        label "B3" $ do
-           add r1 r2 r3
-           move r3 r1
+           add 1 2 3
            jump "B4"
 
        label "B4" $ do
-           add r1 r1 r0
+           add 3 3 0
            return_
 
   it "Another resolution case" $ asmTest 4
@@ -408,41 +488,137 @@ blockTests = do
             jump "L6") $
 
     do label "entry" $ do
-           lc r0
-           lc r1
-           lc r2
-           lc r3
-           save r3 0
+           lc 0
+           lc 1
+           lc 2
+           lc 3
            jump "L3"
 
        label "L3" $ do
-           restore 8 r0
-           move r0 r3
-           save r0 8
-           move r3 r0
-           move r0 r3
-           move r3 r0
-           move r0 r3
-           lc r0
-           save r0 16
-           move r2 r0
-           save r2 24
+           move 0 3
+           move 3 0
+           move 0 3
+           move 3 0
+           move 0 3
+           lc 0
+           move 2 0
            jump "L6"
 
        label "L6" $
-           branch Zero r1 "L3" "L2"
+           branch Zero 1 "L3" "L2"
 
        label "L2" $ do
-           lc r3
-           move r3 r2
-           move r0 r1
-           save r1 40
-           save r0 32
-           lc r3
-           restore 0 r1
-           move r1 r0
-           restore 40 r1
-           restore 32 r0
-           restore 24 r2
-           save r1 0
+           lc 3
+           move 3 2
+           move 0 1
+           lc 3
+           move 1 0
            jump "L6"
+
+callTests :: SpecWith ()
+callTests = do
+  it "Spills all registers at call" $ asmTest 4
+    (label "entry" $ do
+        lc v0
+        lc v1
+        add v0 v1 v2
+        add v2 v1 v3
+        add v3 v2 v4
+        add v4 v3 v5
+        call 1000
+        add v2 v3 v6
+        add v4 v5 v7
+        add v6 v7 v8
+        add v8 v1 v0
+        return_) $
+
+    label "entry" $ do
+        lc 0
+        lc 1
+        add 0 1 2
+        add 2 1 3
+        add 3 2 0
+        save 1 0
+        add 0 3 1
+        save 2 32
+        save 3 24
+        save 0 16
+        save 1 8
+        call 1000
+        restore 32 1
+        restore 24 2
+        add 1 2 0
+        restore 16 2
+        restore 8 3
+        add 2 3 1
+        add 0 1 0
+        restore 0 1
+        add 0 1 0
+        return_
+
+loopTests :: SpecWith ()
+loopTests = do
+  it "Correctly orders loop blocks" $ asmTest 4
+    (do label "entry" $ do
+            trace "B0"
+            jump "B1"
+
+        label "B1" $ do
+            trace "B1"
+            branch Zero v1 "B3" "B2"
+
+        label "B2" $ do
+            trace "B2"
+            branch Zero v1 "B5" "B4"
+
+        label "B3" $ do
+            trace "B3"
+            jump "B1"
+
+        label "B4" $ do
+            trace "B4"
+            branch Zero v1 "B7" "B6"
+
+        label "B5" $ do
+            trace "B5"
+            return_
+
+        label "B6" $ do
+            trace "B6"
+            jump "B4"
+
+        label "B7" $ do
+            trace "B7"
+            jump "B1") $
+
+    do label "entry" $ do
+           trace "B0"
+           jump "B1"
+
+       label "B1" $ do
+           trace "B1"
+           branch Zero 0 "B3" "B2"
+
+       label "B2" $ do
+           trace "B2"
+           branch Zero 0 "B5" "B4"
+
+       label "B3" $ do
+           trace "B3"
+           jump "B1"
+
+       label "B4" $ do
+           trace "B4"
+           branch Zero 0 "B7" "B6"
+
+       label "B5" $ do
+           trace "B5"
+           return_
+
+       label "B6" $ do
+           trace "B6"
+           jump "B4"
+
+       label "B7" $ do
+           trace "B7"
+           jump "B1"
