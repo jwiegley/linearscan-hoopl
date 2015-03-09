@@ -6,7 +6,7 @@
 
 cabal.mkDerivation (self: {
   pname = "linearscan-hoopl";
-  version = "0.1.0.0";
+  version = "0.4.0.0";
   src = builtins.filterSource (path: type: type != "unknown") ./.;
   buildTools = [ cabalInstall ];
   buildDepends = [ free hoopl linearscan transformers ];
