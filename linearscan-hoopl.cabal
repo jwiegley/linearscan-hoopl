@@ -1,5 +1,5 @@
 name:          linearscan-hoopl
-version:       0.4.0.0
+version:       0.4.0.1
 synopsis:      Makes it easy to use the linearscan register allocator with Hoopl
 homepage:      http://github.com/jwiegley/linearscan-hoopl
 license:       BSD3
@@ -45,7 +45,7 @@ test-suite test
       , hspec              >= 1.4.4
       , hspec-expectations >= 0.3
       , hoopl              >= 3.10.0.1
-      , linearscan         >= 0.3.0.1
+      , linearscan         >= 0.4.0.0
       , linearscan-hoopl
       , containers         >= 0.5.5
       , transformers       >= 0.3.0.0

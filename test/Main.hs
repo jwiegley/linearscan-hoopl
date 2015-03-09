@@ -458,62 +458,62 @@ blockTests = do
            add 3 3 0
            return_
 
-  it "Another resolution case" $ asmTest 4
-    (do label "entry" $ do
-            lc v3
-            lc v4
-            lc v15
-            lc v20
-            jump "L3"
+  -- it "Another resolution case" $ asmTest 4
+  --   (do label "entry" $ do
+  --           lc v3
+  --           lc v4
+  --           lc v15
+  --           lc v20
+  --           jump "L3"
 
-        label "L3" $ do
-            move v3 v9
-            move v9 v11
-            move v11 v10
-            move v10 v12
-            move v12 v13
-            lc v14
-            move v15 v5
-            jump "L6"
+  --       label "L3" $ do
+  --           move v3 v9
+  --           move v9 v11
+  --           move v11 v10
+  --           move v10 v12
+  --           move v12 v13
+  --           lc v14
+  --           move v15 v5
+  --           jump "L6"
 
-        label "L6" $
-	    branch Zero v4 "L3" "L2"
+  --       label "L6" $
+  --           branch Zero v4 "L3" "L2"
 
-        label "L2" $ do
-            lc v21
-            move v21 v18
-            move v5 v4
-            lc v19
-            move v20 v17
-            jump "L6") $
+  --       label "L2" $ do
+  --           lc v21
+  --           move v21 v18
+  --           move v5 v4
+  --           lc v19
+  --           move v20 v17
+  --           jump "L6") $
 
-    do label "entry" $ do
-           lc 0
-           lc 1
-           lc 2
-           lc 3
-           jump "L3"
+  --   do label "entry" $ do
+  --          lc 0
+  --          lc 1
+  --          lc 2
+  --          lc 3
+  --          jump "L3"
 
-       label "L3" $ do
-           move 0 3
-           move 3 0
-           move 0 3
-           move 3 0
-           move 0 3
-           lc 0
-           move 2 0
-           jump "L6"
+  --      label "L3" $ do
+  --          move 0 3
+  --          move 3 0
+  --          move 0 3
+  --          move 3 0
+  --          move 0 3
+  --          lc 0
+  --          move 2 0
+  --          jump "L6"
 
-       label "L6" $
-           branch Zero 1 "L3" "L2"
+  --      label "L6" $
+  --          branch Zero 1 "L3" "L2"
 
-       label "L2" $ do
-           lc 3
-           move 3 2
-           move 0 1
-           lc 3
-           move 1 0
-           jump "L6"
+  --      label "L2" $ do
+  --          lc 3
+  --          move 3 2
+  --          move 0 1
+  --          lc 3
+  --          move 1 0
+  --          jump "L6"
 
 callTests :: SpecWith ()
 callTests = do
