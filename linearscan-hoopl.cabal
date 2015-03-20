@@ -39,6 +39,7 @@ test-suite test
   main-is:          Main.hs
   other-modules:    AsmTest
                     Assembly
+                    Normal
   build-depends: 
         base >=3
       , linearscan
@@ -50,3 +51,4 @@ test-suite test
       , containers         >= 0.5.5
       , transformers       >= 0.3.0.0
       , lens-family-core
+      , deepseq

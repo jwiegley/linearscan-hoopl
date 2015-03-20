@@ -12,6 +12,7 @@ import Test.Hspec
 main :: IO ()
 main = hspec $ do
   describe "Sanity tests" sanityTests
+  describe "Spill tests" spillTests
   describe "Block tests" blockTests
   describe "Call tests" callTests
   describe "Loop tests" loopTests
@@ -207,6 +208,8 @@ sanityTests = do
         add 18 19 29
         return_
 
+spillTests :: SpecWith ()
+spillTests = do
   it "Spilling one variable" $ asmTest 32
     (label "entry" $ do
         add v0   v1  v2
@@ -397,8 +400,8 @@ blockTests = do
            branch Zero 2 "B2" "B3"
 
        label "B2" $ do
-           add 1 2 0
-           move 0 1
+           move 1 0
+           add 0 2 1
            jump "B4"
 
        label "B3" $ do
@@ -414,7 +417,7 @@ blockTests = do
            jump "B4"
 
        label "B4" $ do
-           add 1 1 2
+           add 1 1 0
            return_
 
   it "When resolving moves are not needed" $ asmTest 4
@@ -458,62 +461,62 @@ blockTests = do
            add 3 3 0
            return_
 
-  -- it "Another resolution case" $ asmTest 4
-  --   (do label "entry" $ do
-  --           lc v3
-  --           lc v4
-  --           lc v15
-  --           lc v20
-  --           jump "L3"
+  it "Another resolution case" $ asmTest 4
+    (do label "entry" $ do
+            lc v3
+            lc v4
+            lc v15
+            lc v20
+            jump "L3"
 
-  --       label "L3" $ do
-  --           move v3 v9
-  --           move v9 v11
-  --           move v11 v10
-  --           move v10 v12
-  --           move v12 v13
-  --           lc v14
-  --           move v15 v5
-  --           jump "L6"
+        label "L3" $ do
+            move v3 v9
+            move v9 v11
+            move v11 v10
+            move v10 v12
+            move v12 v13
+            lc v14
+            move v15 v5
+            jump "L6"
 
-  --       label "L6" $
-  --           branch Zero v4 "L3" "L2"
+        label "L6" $
+            branch Zero v4 "L3" "L2"
 
-  --       label "L2" $ do
-  --           lc v21
-  --           move v21 v18
-  --           move v5 v4
-  --           lc v19
-  --           move v20 v17
-  --           jump "L6") $
+        label "L2" $ do
+            lc v21
+            move v21 v18
+            move v5 v4
+            lc v19
+            move v20 v17
+            jump "L6") $
 
-  --   do label "entry" $ do
-  --          lc 0
-  --          lc 1
-  --          lc 2
-  --          lc 3
-  --          jump "L3"
+    do label "entry" $ do
+           lc 0
+           lc 1
+           lc 2
+           lc 3
+           jump "L3"
 
-  --      label "L3" $ do
-  --          move 0 3
-  --          move 3 0
-  --          move 0 3
-  --          move 3 0
-  --          move 0 3
-  --          lc 0
-  --          move 2 0
-  --          jump "L6"
+       label "L3" $ do
+           move 0 3
+           move 3 0
+           move 0 3
+           move 3 0
+           move 0 3
+           lc 0
+           move 2 0
+           jump "L6"
 
-  --      label "L6" $
-  --          branch Zero 1 "L3" "L2"
+       label "L6" $
+           branch Zero 1 "L3" "L2"
 
-  --      label "L2" $ do
-  --          lc 3
-  --          move 3 2
-  --          move 0 1
-  --          lc 3
-  --          move 1 0
-  --          jump "L6"
+       label "L2" $ do
+           lc 3
+           move 3 2
+           move 0 1
+           lc 3
+           move 1 0
+           jump "L6"
 
 callTests :: SpecWith ()
 callTests = do

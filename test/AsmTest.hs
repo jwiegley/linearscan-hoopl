@@ -5,6 +5,7 @@ module AsmTest where
 
 import           Assembly
 import           Compiler.Hoopl as Hoopl hiding ((<*>))
+import           Control.DeepSeq
 import           Control.Exception
 import           Control.Monad.Trans.State (evalState)
 import           Data.Foldable
@@ -13,6 +14,7 @@ import           Data.Maybe (fromMaybe)
 import           LinearScan
 import           LinearScan.Hoopl
 import           LinearScan.Hoopl.DSL
+import           Normal ()
 import           Test.Hspec
 
 asmTest :: Int -> Program (Node IRVar) -> Program (Node PhysReg) -> Expectation
@@ -23,7 +25,7 @@ asmTest regs (compile "entry" -> (prog, entry))
     GMany NothingO body NothingO = prog
     blocks = postorder_dfs_from body entry
 
-    alloc blockIds = allocate regs (blockInfo getBlockId) opInfo blocks
+    alloc blockIds = allocate regs (blockInfo getBlockId) opInfo $!! blocks
       where
         getBlockId :: Hoopl.Label -> Int
         getBlockId lbl = fromMaybe (error "The impossible happened")
@@ -32,7 +34,7 @@ asmTest regs (compile "entry" -> (prog, entry))
     go blockIds = case evalState (alloc blockIds) (newSpillStack 0 8) of
         Left err -> error $ "Allocation failed: " ++ err
         Right blks -> do
-            let graph' = newGraph blks
+            let graph' = newGraph $!! blks
             catch (showGraph show graph' `shouldBe`
                    showGraph show result) $ \e -> do
                 putStrLn $ "---- Expecting ----\n" ++ showGraph show result

@@ -41,6 +41,8 @@ blockInfo getBlockId = BlockInfo
 
     , blockSuccessors = Prelude.map getBlockId . successors
 
+    , splitCriticalEdge = \a b -> (a, b) --jww (2015-03-15): NYI
+
     , blockOps = \(BlockCC a b z) ->
         ([NodeCO a], Prelude.map NodeOO (blockToList b), [NodeOC z])
 
