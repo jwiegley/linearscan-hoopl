@@ -12,6 +12,7 @@ import           Control.Applicative
 import           Control.Monad.Trans.State (State, get, put)
 import qualified Data.Map as M
 import           Data.Monoid
+import           Debug.Trace
 import           LinearScan
 import           LinearScan.Hoopl.DSL
 
@@ -41,7 +42,8 @@ blockInfo getBlockId = BlockInfo
 
     , blockSuccessors = Prelude.map getBlockId . successors
 
-    , splitCriticalEdge = \a b -> return (a, b) --jww (2015-03-15): NYI
+    , splitCriticalEdge = \a b ->
+        trace "splitCriticalEdge" $ return (a, b) --jww (2015-03-15): NYI
 
     , blockOps = \(BlockCC a b z) ->
         ([NodeCO a], Prelude.map NodeOO (blockToList b), [NodeOC z])
