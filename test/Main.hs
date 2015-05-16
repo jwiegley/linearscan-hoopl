@@ -495,28 +495,50 @@ blockTests = do
            lc 1
            lc 2
            lc 3
+           save 3 0
            jump "L3"
 
        label "L3" $ do
            move 0 3
-           move 3 0
-           move 0 3
-           move 3 0
-           move 0 3
+           move 3 3
+           move 3 3
+           move 3 3
+           move 3 3
+           save 0 8
            lc 0
+           save 0 16
            move 2 0
            jump "L6"
 
-       label "L6" $
-           branch Zero 1 "L3" "L2"
-
        label "L2" $ do
            lc 3
+           save 2 24
            move 3 2
            move 0 1
-           lc 3
+           save 0 32
+           lc 0
+           save 1 48
+           save 0 40
+           restore 0 1
            move 1 0
+           save 1 0
+           restore 24 2
+           restore 32 0
+           restore 48 1
            jump "L6"
+
+       label "L6" $
+           branch Zero 1 "L5" "L2"
+
+       label "L5" $ do
+           save 1 48
+           restore 0 1
+           save 2 24
+           save 1 0
+           restore 24 2
+           restore 48 1
+           restore 8 0
+           jump "L3"
 
 callTests :: SpecWith ()
 callTests = do
@@ -604,7 +626,7 @@ loopTests = do
 
        label "B2" $ do
            trace "B2"
-           branch Zero 0 "B5" "B4"
+           branch Zero 0 "B5" "B8"
 
        label "B3" $ do
            trace "B3"
@@ -625,3 +647,6 @@ loopTests = do
        label "B7" $ do
            trace "B7"
            jump "B1"
+
+       label "B8" $ do
+           jump "B4"

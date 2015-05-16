@@ -27,10 +27,11 @@ asmTest regs program expected = do
         Left err -> error $ "Allocation failed: " ++ err
         Right blks -> do
             let graph' = newGraph $!! blks
-            catch (showGraph show graph' `shouldBe`
-                   showGraph show result) $ \e -> do
-                putStrLn $ "---- Expecting ----\n" ++ showGraph show result
-                putStrLn $ "---- Compiled  ----\n" ++ showGraph show graph'
+            let g = showGraph show graph'
+                r = showGraph show result
+            catch (g `shouldBe` r) $ \e -> do
+                putStrLn $ "---- Expecting ----\n" ++ r
+                putStrLn $ "---- Compiled  ----\n" ++ g
                 putStrLn "-------------------"
                 throwIO (e :: SomeException)
   where
