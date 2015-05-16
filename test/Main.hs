@@ -74,31 +74,31 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-	lc 0
-	lc 1
-	lc 2
-	lc 3
-	lc 4
-	lc 5
-	save  4 0
-	lc 4
-	save  4 8
-	lc 4
-	save  4 16
-	lc 4
-	save  4 24
-	lc 4
-	add 0 1 0
-	add 2 3 1
-	restore  0 3
-	add 3 5 2
-	save  0 32
-	restore  8 5
-	restore  16 0
-	add 5 0 3
-	restore  24 5
-	add 5 4 0
-	return_
+        lc 0
+        lc 1
+        lc 2
+        lc 3
+        lc 4
+        lc 5
+        save  4 0
+        lc 4
+        save  4 8
+        lc 4
+        save  4 16
+        lc 4
+        save  4 24
+        lc 4
+        add 0 1 0
+        add 2 3 1
+        restore  0 3
+        add 3 5 2
+        save  0 32
+        restore  8 5
+        restore  16 0
+        add 5 0 3
+        restore  24 5
+        add 5 4 0
+        return_
 
   it "Single long-lived variable" $ asmTest 32
     (label "entry" $ do
@@ -288,25 +288,25 @@ spillTests = do
         return_) $
 
     label "entry" $ do
-	lc 0
-	lc 1
-	add 0 1 2
-	add 2 1 0
-	save  1 0
-	add 0 2 1
-	save  2 8
-	add 1 0 2
-	save  1 16
-	restore  8 1
-	add 1 0 0
-	save  0 24
-	restore  16 0
-	add 0 2 1
-	restore  24 2
-	add 2 1 0
-	restore  0 1
-	add 0 1 0
-	return_
+        lc 0
+        lc 1
+        add 0 1 2
+        add 2 1 0
+        save  1 0
+        add 0 2 1
+        save  2 8
+        add 1 0 2
+        save  1 16
+        restore  8 1
+        add 1 0 0
+        save  0 24
+        restore  16 0
+        add 0 2 1
+        restore  24 2
+        add 2 1 0
+        restore  0 1
+        add 0 1 0
+        return_
 
   it "Inserts necessary saves and restores" $ asmTest 4
     (label "entry" $ do
