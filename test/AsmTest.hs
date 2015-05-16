@@ -7,11 +7,10 @@ import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Applicative
 import           Control.DeepSeq
 import           Control.Exception
-import           Control.Monad.Trans.State (evalStateT)
+import           Control.Monad.Trans.State (evalStateT, gets)
 import           Data.Foldable
 import qualified Data.Map as M
 import           Data.Maybe (fromMaybe)
-import           Data.Monoid
 import           LinearScan
 import           LinearScan.Hoopl
 import           LinearScan.Hoopl.DSL
@@ -41,15 +40,16 @@ asmTest regs program expected = do
         GMany NothingO body NothingO = prog
         blocks = postorder_dfs_from body entry
 
-        alloc blockIds = allocate regs (blockInfo getBlockId) opInfo $!! blocks
+        alloc = allocate regs (blockInfo getBlockId) opInfo $!! blocks
           where
             getBlockId :: Hoopl.Label -> Env Int
-            getBlockId lbl = return $
-                fromMaybe (error $ "Unable to find block at label " ++ show lbl)
-                          (M.lookup lbl blockIds)
+            getBlockId lbl = do
+                bids <- gets envBlockIds
+                return $ fromMaybe
+                    (error $ "Unable to find block at label " ++ show lbl)
+                    (M.lookup lbl bids)
 
-        go blockIds =
-            evalStateT (alloc blockIds) (mempty :: Labels, newSpillStack 0 8)
+        go blockIds = evalStateT alloc (newEnvState { envBlockIds = blockIds })
 
     newBody = Data.Foldable.foldl' (flip addBlock) emptyBody
     newGraph xs = GMany NothingO (newBody xs) NothingO

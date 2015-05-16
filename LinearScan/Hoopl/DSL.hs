@@ -14,6 +14,7 @@ import           Data.Monoid
 import           LinearScan
 
 type Labels = M.Map String Label
+type BlockIds = M.Map Label Int
 
 data SpillStack = SpillStack
     { stackPtr      :: Int
@@ -22,7 +23,13 @@ data SpillStack = SpillStack
     }
     deriving (Eq, Show)
 
-type Env = StateT (Labels, SpillStack) SimpleUniqueMonad
+data EnvState = EnvState
+    { envLabels     :: Labels
+    , envBlockIds   :: BlockIds
+    , envSpillStack :: SpillStack
+    }
+
+type Env = StateT EnvState SimpleUniqueMonad
 
 newSpillStack :: Int -> Int -> SpillStack
 newSpillStack offset slotSize = SpillStack
@@ -31,18 +38,26 @@ newSpillStack offset slotSize = SpillStack
     , stackSlots    = mempty
     }
 
+newEnvState :: EnvState
+newEnvState = EnvState
+    { envLabels     = mempty
+    , envBlockIds   = mempty
+    , envSpillStack = newSpillStack 0 8
+    }
+
 getStackSlot :: Maybe VarId -> Env Int
 getStackSlot vid = do
-    (lbls, stack) <- get
+    st <- get
+    let stack = envSpillStack st
     case M.lookup vid (stackSlots stack) of
         Just off -> return off
         Nothing -> do
             let off = stackPtr stack
-            put (lbls, stack
+            put st { envSpillStack = stack
                  { stackPtr   = off + stackSlotSize stack
                  , stackSlots =
                      M.insert vid off (stackSlots stack)
-                 })
+                 }}
             return off
 
 -- | The 'Asm' monad lets us create labels by name and refer to them later.

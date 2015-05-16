@@ -53,7 +53,11 @@ blockInfo getBlockId = BlockInfo
                            (BlockCC next _ _) -> do
         let lab = entryLabel next
         lab' <- lift freshLabel
-        modify (first (M.insert (show lab ++ "'") lab'))
+        modify $ \st ->
+            st { envLabels   = M.insert (show lab ++ "'") lab' (envLabels st)
+               , envBlockIds = let m = envBlockIds st in
+                               M.insert lab' (M.size m + 1) m
+               }
         let e' = retargetBranch e lab lab'
         return (BlockCC b m e',
                 BlockCC (makeLabel lab') BNil (makeJump lab))
