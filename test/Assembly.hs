@@ -161,6 +161,15 @@ instance NodeAlloc (Node IRVar) (Node PhysReg) where
     isBranch (Branch {}) = True
     isBranch _ = False
 
+    retargetBranch (Jump _) _ lab = Jump lab
+    retargetBranch (Branch b v x y) old lab
+        | x == old  = Branch b v lab y
+        | otherwise = Branch b v x lab
+    retargetBranch x _ _ = error $ "Cannot retarget " ++ show x
+
+    makeLabel = Label
+    makeJump  = Jump
+
     getReferences = go
       where
         go :: Node IRVar e x -> [VarInfo]

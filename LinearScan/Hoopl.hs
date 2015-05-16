@@ -9,7 +9,9 @@ module LinearScan.Hoopl where
 
 import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Applicative
-import           Control.Monad.Trans.State (State, get, put)
+import           Control.Arrow
+import           Control.Monad.Trans.Class
+import           Control.Monad.Trans.State (State, get, put, modify)
 import qualified Data.Map as M
 import           Data.Monoid
 import           Debug.Trace
@@ -19,6 +21,11 @@ import           LinearScan.Hoopl.DSL
 class HooplNode n1 => NodeAlloc n1 n2 | n1 -> n2, n2 -> n1 where
     isCall   :: n1 O O -> Bool
     isBranch :: n1 O C -> Bool
+
+    retargetBranch :: n1 O C -> Label -> Label -> n1 O C
+
+    makeLabel :: Label -> n1 C O
+    makeJump  :: Label -> n1 O C
 
     getReferences :: n1 e x -> [VarInfo]
     setRegisters  :: [(Int, PhysReg)] -> n1 e x -> n2 e x
@@ -34,16 +41,22 @@ data NodeV n = NodeCO { getNodeCO :: n C O }
              | NodeOO { getNodeOO :: n O O }
              | NodeOC { getNodeOC :: n O C }
 
-blockInfo :: NonLocal n1
-          => (Label -> Int)
+blockInfo :: (NonLocal n1, NodeAlloc n1 n2)
+          => (Label -> Env Int)
           -> BlockInfo Env (Block n1 C C) (Block n2 C C) (NodeV n1) (NodeV n2)
 blockInfo getBlockId = BlockInfo
     { blockId = getBlockId . entryLabel
 
-    , blockSuccessors = Prelude.map getBlockId . successors
+    , blockSuccessors = Prelude.mapM getBlockId . successors
 
-    , splitCriticalEdge = \a b ->
-        trace "splitCriticalEdge" $ return (a, b) --jww (2015-03-15): NYI
+    , splitCriticalEdge = \(BlockCC b m e)
+                           (BlockCC next _ _) -> do
+        let lab = entryLabel next
+        lab' <- lift freshLabel
+        modify (first (M.insert (show lab ++ "'") lab'))
+        let e' = retargetBranch e lab lab'
+        return (BlockCC b m e',
+                BlockCC (makeLabel lab') BNil (makeJump lab))
 
     , blockOps = \(BlockCC a b z) ->
         ([NodeCO a], Prelude.map NodeOO (blockToList b), [NodeOC z])

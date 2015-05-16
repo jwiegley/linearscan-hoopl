@@ -22,8 +22,8 @@ asmTest :: Int -> Program (Node IRVar) -> Program (Node PhysReg) -> Expectation
 asmTest regs program expected = do
     let (res, _) = runSimpleUniqueMonad $ compile "entry" expected
     let (eres, result) = runSimpleUniqueMonad $ do
-            (prog, entry) <- compile "entry" program
-            liftA2 (,) (runTest prog entry) (pure res)
+            x <- compile "entry" program
+            liftA2 (,) (uncurry runTest x) (pure res)
     case eres of
         Left err -> error $ "Allocation failed: " ++ err
         Right blks -> do
@@ -36,16 +36,15 @@ asmTest regs program expected = do
                 throwIO (e :: SomeException)
   where
     runTest prog entry =
-        go $ M.fromList
-           $ zip (Prelude.map entryLabel blocks) [(0 :: Int)..]
+        go $ M.fromList $ zip (Prelude.map entryLabel blocks) [(0 :: Int)..]
       where
         GMany NothingO body NothingO = prog
         blocks = postorder_dfs_from body entry
 
         alloc blockIds = allocate regs (blockInfo getBlockId) opInfo $!! blocks
           where
-            getBlockId :: Hoopl.Label -> Int
-            getBlockId lbl =
+            getBlockId :: Hoopl.Label -> Env Int
+            getBlockId lbl = return $
                 fromMaybe (error $ "Unable to find block at label " ++ show lbl)
                           (M.lookup lbl blockIds)
 
