@@ -2,15 +2,48 @@ module LinearScan.Hoopl.DSL where
 
 import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Applicative
+import           Control.Arrow (first)
 import           Control.Monad.Free
 import           Control.Monad.Trans.Class
 import qualified Control.Monad.Trans.Free as TF
 import           Control.Monad.Trans.Free hiding (FreeF(..), Free)
-import           Control.Monad.Trans.State (StateT, evalStateT, gets, modify)
+import           Control.Monad.Trans.State (StateT, evalStateT,
+                                            gets, modify, get, put)
 import qualified Data.Map as M
 import           Data.Monoid
+import           LinearScan
 
 type Labels = M.Map String Label
+
+data SpillStack = SpillStack
+    { stackPtr      :: Int
+    , stackSlotSize :: Int
+    , stackSlots    :: M.Map (Maybe Int) Int
+    }
+    deriving (Eq, Show)
+
+type Env = StateT (Labels, SpillStack) SimpleUniqueMonad
+
+newSpillStack :: Int -> Int -> SpillStack
+newSpillStack offset slotSize = SpillStack
+    { stackPtr      = offset
+    , stackSlotSize = slotSize
+    , stackSlots    = mempty
+    }
+
+getStackSlot :: Maybe VarId -> Env Int
+getStackSlot vid = do
+    (lbls, stack) <- get
+    case M.lookup vid (stackSlots stack) of
+        Just off -> return off
+        Nothing -> do
+            let off = stackPtr stack
+            put (lbls, stack
+                 { stackPtr   = off + stackSlotSize stack
+                 , stackSlots =
+                     M.insert vid off (stackSlots stack)
+                 })
+            return off
 
 -- | The 'Asm' monad lets us create labels by name and refer to them later.
 type Asm = StateT Labels SimpleUniqueMonad
@@ -63,10 +96,9 @@ jump dest = endNode $ mkBranchNode <$> getLabel dest
 -- | When we compile a program, the result is a closed Hoopl Graph and the
 --   label corresponding to the requested entry label name.
 compile :: (NonLocal n, HooplNode n)
-        => String -> Program n -> (Graph n C C, Label)
+        => String -> Program n -> SimpleUniqueMonad (Graph n C C, Label)
 compile name prog
-    = runSimpleUniqueMonad
-    $ flip evalStateT (mempty :: Labels)
+    = flip evalStateT (mempty :: Labels)
     $ do body  <- go prog
          entry <- gets (M.lookup name)
          case entry of
