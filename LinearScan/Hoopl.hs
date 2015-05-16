@@ -14,18 +14,44 @@ import qualified Data.Map as M
 import           Data.Monoid
 import           LinearScan
 
-class HooplNode n1
-      => NodeAlloc s n1 n2 | n1 -> n2, n2 -> n1, n1 -> s, n2 -> s where
+data SpillStack = SpillStack
+    { stackPtr      :: Int
+    , stackSlotSize :: Int
+    , stackSlots    :: M.Map (Maybe Int) Int
+    }
+    deriving (Eq, Show)
+
+newSpillStack :: Int -> Int -> SpillStack
+newSpillStack offset slotSize = SpillStack
+    { stackPtr      = offset
+    , stackSlotSize = slotSize
+    , stackSlots    = mempty
+    }
+
+getStackSlot :: Maybe VarId -> State SpillStack Int
+getStackSlot vid = do
+    stack <- get
+    case M.lookup vid (stackSlots stack) of
+        Just off -> return off
+        Nothing -> do
+            let off = stackPtr stack
+            put stack
+                 { stackPtr   = off + stackSlotSize stack
+                 , stackSlots =
+                     M.insert vid off (stackSlots stack)
+                 }
+            return off
+class HooplNode n1 => NodeAlloc n1 n2 | n1 -> n2, n2 -> n1 where
     isCall   :: n1 O O -> Bool
     isBranch :: n1 O C -> Bool
 
     getReferences :: n1 e x -> [VarInfo]
     setRegisters  :: [(Int, PhysReg)] -> n1 e x -> n2 e x
 
-    mkMoveOps    :: PhysReg     -> PhysReg     -> State s [n2 O O]
-    mkSwapOps    :: PhysReg     -> PhysReg     -> State s [n2 O O]
-    mkSaveOps    :: PhysReg     -> Maybe VarId -> State s [n2 O O]
-    mkRestoreOps :: Maybe VarId -> PhysReg     -> State s [n2 O O]
+    mkMoveOps    :: PhysReg     -> PhysReg     -> State SpillStack [n2 O O]
+    mkSwapOps    :: PhysReg     -> PhysReg     -> State SpillStack [n2 O O]
+    mkSaveOps    :: PhysReg     -> Maybe VarId -> State SpillStack [n2 O O]
+    mkRestoreOps :: Maybe VarId -> PhysReg     -> State SpillStack [n2 O O]
 
     op1ToString  :: n1 e x -> String
 
@@ -33,15 +59,15 @@ data NodeV n = NodeCO { getNodeCO :: n C O }
              | NodeOO { getNodeOO :: n O O }
              | NodeOC { getNodeOC :: n O C }
 
-blockInfo :: NonLocal n1
+blockInfo :: (NonLocal n1, Monad m)
           => (Label -> Int)
-          -> BlockInfo (Block n1 C C) (Block n2 C C) (NodeV n1) (NodeV n2)
+          -> BlockInfo m (Block n1 C C) (Block n2 C C) (NodeV n1) (NodeV n2)
 blockInfo getBlockId = BlockInfo
     { blockId = getBlockId . entryLabel
 
     , blockSuccessors = Prelude.map getBlockId . successors
 
-    , splitCriticalEdge = \a b -> (a, b) --jww (2015-03-15): NYI
+    , splitCriticalEdge = \a b -> return (a, b) --jww (2015-03-15): NYI
 
     , blockOps = \(BlockCC a b z) ->
         ([NodeCO a], Prelude.map NodeOO (blockToList b), [NodeOC z])
@@ -53,7 +79,8 @@ blockInfo getBlockId = BlockInfo
             (getNodeOC z)
     }
 
-opInfo :: forall s n1 n2. NodeAlloc s n1 n2 => OpInfo s (NodeV n1) (NodeV n2)
+opInfo :: forall n1 n2. NodeAlloc n1 n2
+       => OpInfo (State SpillStack) (NodeV n1) (NodeV n2)
 opInfo = OpInfo
     { opKind = \node -> case node of
            NodeOO n | isCall n  -> IsCall
@@ -82,31 +109,3 @@ opInfo = OpInfo
            NodeOO n -> op1ToString n
            NodeOC n -> op1ToString n
     }
-
-data SpillStack = SpillStack
-    { stackPtr      :: Int
-    , stackSlotSize :: Int
-    , stackSlots    :: M.Map (Maybe Int) Int
-    }
-    deriving (Eq, Show)
-
-newSpillStack :: Int -> Int -> SpillStack
-newSpillStack offset slotSize = SpillStack
-    { stackPtr      = offset
-    , stackSlotSize = slotSize
-    , stackSlots    = mempty
-    }
-
-getStackSlot :: Maybe VarId -> State SpillStack Int
-getStackSlot vid = do
-    stack <- get
-    case M.lookup vid (stackSlots stack) of
-        Just off -> return off
-        Nothing -> do
-            let off = stackPtr stack
-            put stack
-                 { stackPtr   = off + stackSlotSize stack
-                 , stackSlots =
-                     M.insert vid off (stackSlots stack)
-                 }
-            return off

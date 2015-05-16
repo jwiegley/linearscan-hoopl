@@ -12,11 +12,9 @@ module Assembly where
 
 import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Applicative
-import           Data.Foldable
 import qualified Data.List
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid
-import           Data.Traversable
 import           Lens.Family hiding (Constant)
 import           LinearScan
 import           LinearScan.Hoopl
@@ -153,7 +151,7 @@ instance Show IRVar where
     show (PhysicalIV r) = "r" ++ show r
     show (VirtualIV n)  = "v" ++ show n
 
-instance NodeAlloc SpillStack (Node IRVar) (Node PhysReg) where
+instance NodeAlloc (Node IRVar) (Node PhysReg) where
     isCall (Call {}) = True
     isCall _ = False
 
