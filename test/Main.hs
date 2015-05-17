@@ -583,7 +583,7 @@ callTests = do
 
 loopTests :: SpecWith ()
 loopTests = do
-  it "Correctly orders loop blocks" $ asmTest 4
+  it "Correctly orders loop blocks" $ asmTestLiteral 4
     (do label "entry" $ do
             trace "B0"
             jump "B1"
@@ -616,37 +616,29 @@ loopTests = do
             trace "B7"
             jump "B1") $
 
-    do label "entry" $ do
-           trace "B0"
-           jump "B1"
-
-       label "B1" $ do
-           trace "B1"
-           branch Zero 0 "B3" "B2"
-
-       label "B2" $ do
-           trace "B2"
-           branch Zero 0 "B5" "B8"
-
-       label "B3" $ do
-           trace "B3"
-           jump "B1"
-
-       label "B4" $ do
-           trace "B4"
-           branch Zero 0 "B7" "B6"
-
-       label "B5" $ do
-           trace "B5"
-           return_
-
-       label "B6" $ do
-           trace "B6"
-           jump "B4"
-
-       label "B7" $ do
-           trace "B7"
-           jump "B1"
-
-       label "B8" $ do
-           jump "B4"
+    "L1:\n\
+\\tTRACE  \"B0\"\n\
+\\t@jmp L2\n\
+\L2:\n\
+\\tTRACE  \"B1\"\n\
+\\t@bZero 0 L3; @jmp L4\n\
+\L3:\n\
+\\tTRACE  \"B3\"\n\
+\\t@jmp L2\n\
+\L4:\n\
+\\tTRACE  \"B2\"\n\
+\\t@bZero 0 L5; @jmp L9\n\
+\L5:\n\
+\\tTRACE  \"B5\"\n\
+\\t@return [] Nop\n\
+\L6:\n\
+\\tTRACE  \"B4\"\n\
+\\t@bZero 0 L7; @jmp L8\n\
+\L7:\n\
+\\tTRACE  \"B7\"\n\
+\\t@jmp L2\n\
+\L8:\n\
+\\tTRACE  \"B6\"\n\
+\\t@jmp L6\n\
+\L9:\n\
+\\t@jmp L6\n"

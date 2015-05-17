@@ -4,7 +4,6 @@ module AsmTest where
 
 import           Assembly
 import           Compiler.Hoopl as Hoopl hiding ((<*>))
-import           Control.Applicative
 import           Control.DeepSeq
 import           Control.Exception
 import           Control.Monad.Trans.State (evalStateT, gets)
@@ -17,18 +16,17 @@ import           LinearScan.Hoopl.DSL
 import           Normal ()
 import           Test.Hspec
 
-asmTest :: Int -> Program (Node IRVar) -> Program (Node PhysReg) -> Expectation
-asmTest regs program expected = do
-    let (res, _) = runSimpleUniqueMonad $ compile "entry" expected
-    let (eres, result) = runSimpleUniqueMonad $ do
+asmTestLiteral :: Int -> Program (Node IRVar) -> String -> Expectation
+asmTestLiteral regs program expected = do
+    let eres = runSimpleUniqueMonad $ do
             x <- compile "entry" program
-            liftA2 (,) (uncurry runTest x) (pure res)
+            uncurry runTest x
     case eres of
         Left err -> error $ "Allocation failed: " ++ err
         Right blks -> do
             let graph' = newGraph $!! blks
             let g = showGraph show graph'
-                r = showGraph show result
+                r = expected
             catch (g `shouldBe` r) $ \e -> do
                 putStrLn $ "---- Expecting ----\n" ++ r
                 putStrLn $ "---- Compiled  ----\n" ++ g
@@ -54,3 +52,11 @@ asmTest regs program expected = do
 
     newBody = Data.Foldable.foldl' (flip addBlock) emptyBody
     newGraph xs = GMany NothingO (newBody xs) NothingO
+
+asmTest :: Int -> Program (Node IRVar) -> Program (Node PhysReg) -> Expectation
+asmTest regs program expected
+    = asmTestLiteral regs program
+    $ showGraph show
+    $ fst
+    $ runSimpleUniqueMonad
+    $ compile "entry" expected
