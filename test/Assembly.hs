@@ -25,9 +25,14 @@ import           LinearScan.Hoopl.DSL
 default (Int)
 
 -- | The basic instructions that have nothing to do with control flow.
-data Instruction reg = Add reg reg reg
-                     | Nop
-    deriving (Eq, Show, Functor, Foldable, Traversable)
+data Instruction reg
+    = Add reg reg reg
+    | Nop
+    deriving (Eq, Functor, Foldable, Traversable)
+
+instance Show r => Show (Instruction r) where
+    show (Add x1 x2 x3) = "add " ++ show x1 ++ " " ++ show x2 ++ " " ++ show x3
+    show Nop = "nop"
 
 -- | Tests used for branching (correspond to branching instructions)
 data Test = Zero                -- ^ beq
@@ -79,8 +84,8 @@ instance Show v => Show (Node v e x) where
     show (LoadConst _c v)  = "\t@lc " ++ show v -- ++ " " ++ show c
     show (Move x1 x2)      = "\t@mvrr " ++ show x1 ++ " " ++ show x2
     show (Copy x1 x2)      = "\t@cprr " ++ show x1 ++ " " ++ show x2
-    show (Save src dst)    = "\t@save " ++ " " ++ show src ++ " " ++ show dst
-    show (Restore src dst) = "\t@restore " ++ " " ++ show src ++ " " ++ show dst
+    show (Save src dst)    = "\t@save " ++ show src ++ " " ++ show dst
+    show (Restore src dst) = "\t@restore " ++ show src ++ " " ++ show dst
     show (Trace str)       = "\tTRACE " ++ " " ++ show str
     show (Jump l)          = "\t@jmp " ++ show l
     show (Branch c v t f)  = "\t@b" ++ show c ++ " " ++ show v
@@ -131,10 +136,10 @@ call dst = bodyNode $ Call InlineC dst
 lc :: v -> BodyNode (Node v)
 lc x0 = bodyNode $ LoadConst 0 x0
 
-save :: PhysReg -> Dst PhysReg -> BodyNode (Node PhysReg)
+save :: v -> Dst PhysReg -> BodyNode (Node v)
 save r dst = bodyNode $ Save r dst
 
-restore :: Src PhysReg -> PhysReg -> BodyNode (Node PhysReg)
+restore :: Src PhysReg -> v -> BodyNode (Node v)
 restore src r = bodyNode $ Restore src r
 
 trace :: String -> BodyNode (Node v)
@@ -147,13 +152,24 @@ branch tst v good bad =
 return_ :: EndNode (Node v)
 return_ = endNode $ return $ ReturnInstr [] Nop
 
+data Assign a b = Assign a b
+
+instance Show a => Show (Assign a PhysReg) where
+    show (Assign v (-1)) = "<<v" ++ show v ++ ">>"
+    show (Assign v r)    = "r" ++ show r ++ "|v" ++ show v
+
 data IRVar = PhysicalIV PhysReg | VirtualIV Int deriving Eq
 
 instance Show IRVar where
     show (PhysicalIV r) = "r" ++ show r
     show (VirtualIV n)  = "v" ++ show n
 
-instance NodeAlloc (Node IRVar) (Node PhysReg) where
+instance NodeAlloc Node IRVar (Assign VarId PhysReg) where
+    fromVar (PhysicalIV r) = Left r
+    fromVar (VirtualIV n)  = Right n
+
+    fromReg (Assign _ r) = r
+
     isCall (Call {}) = True
     isCall _ = False
 
@@ -167,8 +183,8 @@ instance NodeAlloc (Node IRVar) (Node PhysReg) where
         | otherwise = Branch b v x lab
     retargetBranch x _ _ = error $ "Cannot retarget " ++ show x
 
-    makeLabel = Label
-    makeJump  = Jump
+    mkLabelOp = Label
+    mkJumpOp  = Jump
 
     getReferences = go
       where
@@ -199,23 +215,29 @@ instance NodeAlloc (Node IRVar) (Node PhysReg) where
             , regRequired = True
             }
 
-    setRegisters = over variables . go
+    setRegisters m g = do
+        for_ m $ \(v, r) -> setAssignment r v
+        return $ over variables go g
       where
-        go :: [(Int, PhysReg)] -> IRVar -> PhysReg
-        go _ (PhysicalIV r) = r
-        go m (VirtualIV n)  =
-            fromMaybe
-                (-1) -- (error $ "Allocation failed for variable " ++ show n)
-                (Data.List.lookup n m)
+        go :: IRVar -> Assign VarId PhysReg
+        go (PhysicalIV r) = Assign (-1) r
+        go (VirtualIV n)  = Assign n (fromMaybe (-1) (Data.List.lookup n m))
 
-    mkMoveOps src dst = return [Move src dst]
-    mkSwapOps src dst = liftA2 (++) (mkRestoreOps Nothing dst)
-                                    (mkSaveOps src Nothing)
+    mkMoveOps src dst = do
+        vid <- getAssignment src
+        return [Move (Assign vid src) (Assign vid dst)]
+    mkSwapOps src dst =
+        liftA2 (++) (mkRestoreOps Nothing dst)
+                    (mkSaveOps src Nothing)
 
-    mkSaveOps    src dst = do off <- getStackSlot dst
-                              return [Save src off]
-    mkRestoreOps src dst = do off <- getStackSlot src
-                              return [Restore off dst]
+    mkSaveOps src dst = do
+        off <- getStackSlot dst
+        vid <- getAssignment src
+        return [Save (Assign vid src) off]
+    mkRestoreOps src dst = do
+        off <- getStackSlot src
+        vid <- getAssignment dst
+        return [Restore off (Assign vid dst)]
 
     op1ToString = show
 
@@ -264,8 +286,9 @@ v38 = var 38
 v39 = var 39
 v40 = var 40
 
-reg :: PhysReg -> PhysReg
-reg r = r
+reg :: PhysReg -> IRVar -> Assign VarId PhysReg
+reg _ (PhysicalIV _) = error "Don't use reg to reference a literal register"
+reg r (VirtualIV v) = Assign v r
 
 r0  = reg 0
 r1  = reg 1

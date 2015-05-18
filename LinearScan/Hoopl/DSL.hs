@@ -24,9 +24,10 @@ data SpillStack = SpillStack
     deriving (Eq, Show)
 
 data EnvState = EnvState
-    { envLabels     :: Labels
-    , envBlockIds   :: BlockIds
-    , envSpillStack :: SpillStack
+    { envLabels      :: Labels
+    , envBlockIds    :: BlockIds
+    , envSpillStack  :: SpillStack
+    , envAssignments :: M.Map PhysReg VarId
     }
 
 type Env = StateT EnvState SimpleUniqueMonad
@@ -40,9 +41,10 @@ newSpillStack offset slotSize = SpillStack
 
 newEnvState :: EnvState
 newEnvState = EnvState
-    { envLabels     = mempty
-    , envBlockIds   = mempty
-    , envSpillStack = newSpillStack 0 8
+    { envLabels      = mempty
+    , envBlockIds    = mempty
+    , envSpillStack  = newSpillStack 0 8
+    , envAssignments = mempty
     }
 
 getStackSlot :: Maybe VarId -> Env Int
@@ -72,6 +74,18 @@ getLabel str = do
             lbl <- lift freshLabel
             modify (M.insert str lbl)
             return lbl
+
+setAssignment :: PhysReg -> VarId -> Env ()
+setAssignment reg vid =
+    modify $ \env ->
+        env { envAssignments = M.insert reg vid (envAssignments env) }
+
+getAssignment :: PhysReg -> Env VarId
+getAssignment reg = do
+    l <- gets (M.lookup reg . envAssignments)
+    case l of
+        Just vid -> return vid
+        Nothing  -> error $ "No assignment for register: " ++ show reg
 
 -- | A series of 'Nodes' is a set of assembly instructions that ends with some
 --   kind of closing operation, such as a jump, branch or return.

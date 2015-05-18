@@ -10,6 +10,9 @@ import Assembly
 import Compiler.Hoopl as Hoopl hiding ((<*>))
 import Control.DeepSeq
 
+instance (NFData a, NFData b) => NFData (Assign a b) where
+    rnf (Assign a b) = a `deepseq` b `deepseq` ()
+
 instance NFData IRVar where
     rnf (PhysicalIV r) = r `deepseq` ()
     rnf (VirtualIV r) = r `deepseq` ()

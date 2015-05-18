@@ -26,9 +26,10 @@ asmTestLiteral regs program expected = do
         Right blks -> do
             let graph' = newGraph $!! blks
             let g = showGraph show graph'
-                r = expected
-            catch (g `shouldBe` r) $ \e -> do
-                putStrLn $ "---- Expecting ----\n" ++ r
+            catch (g `shouldBe` expected) $ \e -> do
+                let input = runSimpleUniqueMonad $ compile "entry" program
+                putStrLn $ "---- Parsed ----\n" ++ showGraph show (fst input)
+                putStrLn $ "---- Expecting ----\n" ++ expected
                 putStrLn $ "---- Compiled  ----\n" ++ g
                 putStrLn "-------------------"
                 throwIO (e :: SomeException)
@@ -53,7 +54,10 @@ asmTestLiteral regs program expected = do
     newBody = Data.Foldable.foldl' (flip addBlock) emptyBody
     newGraph xs = GMany NothingO (newBody xs) NothingO
 
-asmTest :: Int -> Program (Node IRVar) -> Program (Node PhysReg) -> Expectation
+asmTest :: Int
+        -> Program (Node IRVar)
+        -> Program (Node (Assign VarId PhysReg))
+        -> Expectation
 asmTest regs program expected
     = asmTestLiteral regs program
     $ showGraph show

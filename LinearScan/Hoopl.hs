@@ -18,32 +18,36 @@ import           Debug.Trace
 import           LinearScan
 import           LinearScan.Hoopl.DSL
 
-class HooplNode n1 => NodeAlloc n1 n2 | n1 -> n2, n2 -> n1 where
-    isCall   :: n1 O O -> Bool
-    isBranch :: n1 O C -> Bool
+class HooplNode (n v) => NodeAlloc n v r | n -> v, n -> r where
+    fromVar :: v -> Either PhysReg VarId
+    fromReg :: r -> PhysReg
 
-    retargetBranch :: n1 O C -> Label -> Label -> n1 O C
+    isCall   :: n v O O -> Bool
+    isBranch :: n v O C -> Bool
 
-    makeLabel :: Label -> n1 C O
-    makeJump  :: Label -> n1 O C
+    retargetBranch :: n v O C -> Label -> Label -> n v O C
 
-    getReferences :: n1 e x -> [VarInfo]
-    setRegisters  :: [(Int, PhysReg)] -> n1 e x -> n2 e x
+    mkLabelOp :: Label -> n v C O
+    mkJumpOp  :: Label -> n v O C
 
-    mkMoveOps    :: PhysReg     -> PhysReg     -> Env [n2 O O]
-    mkSwapOps    :: PhysReg     -> PhysReg     -> Env [n2 O O]
-    mkSaveOps    :: PhysReg     -> Maybe VarId -> Env [n2 O O]
-    mkRestoreOps :: Maybe VarId -> PhysReg     -> Env [n2 O O]
+    getReferences :: n v e x -> [VarInfo]
+    setRegisters  :: [(Int, PhysReg)] -> n v e x -> Env (n r e x)
 
-    op1ToString  :: n1 e x -> String
+    mkMoveOps    :: PhysReg -> PhysReg -> Env [n r O O]
+    mkSwapOps    :: PhysReg -> PhysReg -> Env [n r O O]
+    mkSaveOps    :: PhysReg -> Maybe VarId -> Env [n r O O]
+    mkRestoreOps :: Maybe VarId -> PhysReg -> Env [n r O O]
+
+    op1ToString  :: n v e x -> String
 
 data NodeV n = NodeCO { getNodeCO :: n C O }
              | NodeOO { getNodeOO :: n O O }
              | NodeOC { getNodeOC :: n O C }
 
-blockInfo :: (NonLocal n1, NodeAlloc n1 n2)
+blockInfo :: (NodeAlloc n v r, NonLocal (n v))
           => (Label -> Env Int)
-          -> BlockInfo Env (Block n1 C C) (Block n2 C C) (NodeV n1) (NodeV n2)
+          -> BlockInfo Env (Block (n v) C C) (Block (n r) C C)
+                           (NodeV (n v)) (NodeV (n r))
 blockInfo getBlockId = BlockInfo
     { blockId = getBlockId . entryLabel
 
@@ -60,7 +64,7 @@ blockInfo getBlockId = BlockInfo
                }
         let e' = retargetBranch e lab lab'
         return (BlockCC b m e',
-                BlockCC (makeLabel lab') BNil (makeJump lab))
+                BlockCC (mkLabelOp lab') BNil (mkJumpOp lab))
 
     , blockOps = \(BlockCC a b z) ->
         ([NodeCO a], Prelude.map NodeOO (blockToList b), [NodeOC z])
@@ -72,7 +76,7 @@ blockInfo getBlockId = BlockInfo
             (getNodeOC z)
     }
 
-opInfo :: forall n1 n2. NodeAlloc n1 n2 => OpInfo Env (NodeV n1) (NodeV n2)
+opInfo :: NodeAlloc n v r => OpInfo Env (NodeV (n v)) (NodeV (n r))
 opInfo = OpInfo
     { opKind = \node -> case node of
            NodeOO n | isCall n  -> IsCall
@@ -91,10 +95,11 @@ opInfo = OpInfo
     , saveOp    = \x y -> fmap NodeOO <$> mkSaveOps x y
     , restoreOp = \x y -> fmap NodeOO <$> mkRestoreOps x y
 
-    , applyAllocs = \node m -> case node of
-           NodeCO n -> [NodeCO (setRegisters m n)]
-           NodeOO n -> [NodeOO (setRegisters m n)]
-           NodeOC n -> [NodeOC (setRegisters m n)]
+    , applyAllocs = \node m ->
+        case node of
+           NodeCO n -> setRegisters m n >>= \alloc -> return [NodeCO alloc]
+           NodeOO n -> setRegisters m n >>= \alloc -> return [NodeOO alloc]
+           NodeOC n -> setRegisters m n >>= \alloc -> return [NodeOC alloc]
 
     , showOp1 = \node -> case node of
            NodeCO n -> op1ToString n
