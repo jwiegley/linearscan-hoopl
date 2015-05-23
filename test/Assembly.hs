@@ -157,7 +157,7 @@ data Assign a b = Assign a b
 instance Show a => Show (Assign a PhysReg) where
     show (Assign v (-1)) = "<<v" ++ show v ++ ">>"
     -- show (Assign v r)    = "r" ++ show r ++ "|v" ++ show v
-    show (Assign v r)    = show r
+    show (Assign _ r)    = show r
 
 data IRVar = PhysicalIV PhysReg | VirtualIV Int deriving Eq
 
