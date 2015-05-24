@@ -39,11 +39,11 @@ newSpillStack offset slotSize = SpillStack
     , stackSlots    = mempty
     }
 
-newEnvState :: EnvState
-newEnvState = EnvState
+newEnvState :: Int -> Int -> EnvState
+newEnvState offset slotSize = EnvState
     { envLabels      = mempty
     , envBlockIds    = mempty
-    , envSpillStack  = newSpillStack 0 8
+    , envSpillStack  = newSpillStack offset slotSize
     , envAssignments = mempty
     }
 

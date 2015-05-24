@@ -14,7 +14,7 @@ import Test.Hspec
 asmTestLiteral :: Int -> Program (Node IRVar) -> String -> Expectation
 asmTestLiteral regs program expected = do
     let (graph, entry) = runSimpleUniqueMonad $ compile "entry" program
-    case allocateHoopl regs entry graph of
+    case allocateHoopl regs 0 8 entry graph of
         Left err -> error $ "Allocation failed: " ++ err
         Right graph' -> do
             let g = showGraph show graph'

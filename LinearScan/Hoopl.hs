@@ -115,9 +115,13 @@ runSimpleUniqueMonad' :: Int -> SimpleUniqueMonad a -> a
 runSimpleUniqueMonad' start m = fst (unSUM' (unsafeCoerce m) [start..])
 
 allocateHoopl :: (NonLocal (n v), NonLocal (n r), NodeAlloc n v r)
-              => Int -> Label -> Graph (n v) C C
+              => Int             -- ^ Number of machine registers
+              -> Int             -- ^ Offset of the spill stack
+              -> Int             -- ^ Size of spilled register in bytes
+              -> Label           -- ^ Label of graph entry block
+              -> Graph (n v) C C -- ^ Program graph
               -> Either String (Graph (n r) C C)
-allocateHoopl regs entry graph =
+allocateHoopl regs offset slotSize entry graph =
     newGraph <$> runSimpleUniqueMonad' (1 + length blocks) go
   where
     newGraph xs = GMany NothingO (newBody xs) NothingO
@@ -128,7 +132,7 @@ allocateHoopl regs entry graph =
       where
         GMany NothingO body NothingO = graph
 
-    go = evalStateT alloc newEnvState
+    go = evalStateT alloc (newEnvState offset slotSize)
       where
         alloc = allocate regs (blockInfo getBlockId) opInfo blocks
           where
