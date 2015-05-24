@@ -11,12 +11,14 @@ import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Applicative
 import           Control.Arrow
 import           Control.Monad.Trans.Class
-import           Control.Monad.Trans.State (State, get, put, modify)
+import           Control.Monad.Trans.State (evalStateT, modify)
+import           Data.Foldable
 import qualified Data.Map as M
 import           Data.Monoid
 import           Debug.Trace
 import           LinearScan
 import           LinearScan.Hoopl.DSL
+import           Unsafe.Coerce
 
 class HooplNode (n v) => NodeAlloc n v r | n -> v, n -> r where
     fromVar :: v -> Either PhysReg VarId
@@ -106,3 +108,29 @@ opInfo = OpInfo
            NodeOO n -> op1ToString n
            NodeOC n -> op1ToString n
     }
+
+newtype SimpleUniqueMonad' a = SUM' { unSUM' :: [Int] -> (a, [Int]) }
+
+runSimpleUniqueMonad' :: Int -> SimpleUniqueMonad a -> a
+runSimpleUniqueMonad' start m = fst (unSUM' (unsafeCoerce m) [start..])
+
+allocateHoopl :: (NonLocal (n v), NonLocal (n r), NodeAlloc n v r)
+              => Int -> Label -> Graph (n v) C C
+              -> Either String (Graph (n r) C C)
+allocateHoopl regs entry graph =
+    newGraph <$> runSimpleUniqueMonad' (1 + length blocks) go
+  where
+    newGraph xs = GMany NothingO (newBody xs) NothingO
+      where
+        newBody = Data.Foldable.foldl' (flip addBlock) emptyBody
+
+    blocks = postorder_dfs_from body entry
+      where
+        GMany NothingO body NothingO = graph
+
+    go = evalStateT alloc newEnvState
+      where
+        alloc = allocate regs (blockInfo getBlockId) opInfo blocks
+          where
+            getBlockId :: Hoopl.Label -> Env Int
+            getBlockId = return . unsafeCoerce
