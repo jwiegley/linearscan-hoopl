@@ -78,7 +78,7 @@ data Node v e x where
 
 deriving instance Eq v => Eq (Node v e x)
 
-instance Show v => Show (Node v e x) where
+instance (Show v, VarReg v) => Show (Node v e x) where
     show (Label l)         = show l ++ ":"
     show (Alloc x1 x2)     = "\talloc " ++
                              (case x1 of Just v -> " " ++ show v ; _ -> " _")
@@ -89,8 +89,9 @@ instance Show v => Show (Node v e x) where
     show (LoadConst _c v)  = "\tlc " ++ show v -- ++ " " ++ show c
     show (Move x1 x2)      = "\tmove " ++ show x1 ++ " " ++ show x2
     show (Copy x1 x2)      = "\tcopy " ++ show x1 ++ " " ++ show x2
-    show (Save src dst)    = "\tsave " ++ show src ++ " " ++ show dst
-    show (Restore src dst) = "\trestore " ++ show src ++ " " ++ show dst
+    show (Save src dst)    = "\tsave " ++ show (varReg src) ++ " " ++ show dst
+    show (Restore src dst) = "\trestore " ++ show src ++ " "
+                          ++ show (varReg dst)
     show (Trace str)       = "\ttrace " ++ " " ++ show str
     show (Jump l)          = "\tjump " ++ show l
     show (Branch _ v t f)  = "\tbranch " ++ show v
@@ -173,8 +174,17 @@ data Assign a b = Assign a b
 
 instance Show a => Show (Assign a PhysReg) where
     show (Assign v (-1)) = "<<v" ++ show v ++ ">>"
-    -- show (Assign v r)    = "r" ++ show r ++ "|v" ++ show v
-    show (Assign _ r)    = show r
+    show (Assign v r)    = "r" ++ show r ++ "|v" ++ show v
+
+class VarReg a where
+    varReg :: a -> PhysReg
+
+instance VarReg IRVar where
+    varReg (PhysicalIV r) = r
+    varReg v = error $ "No register known for " ++ show v
+
+instance VarReg (Assign a PhysReg) where
+    varReg (Assign _ b) = b
 
 data IRVar = PhysicalIV PhysReg | VirtualIV Int deriving Eq
 
@@ -243,7 +253,8 @@ instance NodeAlloc (Node IRVar) (Node (Assign VarId PhysReg)) where
         go (VirtualIV n)  = Assign n (fromMaybe (-1) (Data.List.lookup n m))
 
     mkMoveOps src dst = do
-        vid <- getAssignment src
+        -- vid <- getAssignment src
+        let vid = 0
         return [Move (Assign vid src) (Assign vid dst)]
     mkSwapOps src dst =
         liftA2 (++) (mkRestoreOps Nothing dst)
@@ -252,10 +263,12 @@ instance NodeAlloc (Node IRVar) (Node (Assign VarId PhysReg)) where
     mkSaveOps src dst = do
         off <- getStackSlot dst
         vid <- getAssignment src
+        -- let vid = 0
         return [Save (Assign vid src) off]
     mkRestoreOps src dst = do
         off <- getStackSlot src
-        vid <- getAssignment dst
+        -- vid <- getAssignment dst
+        let vid = 0
         return [Restore off (Assign vid dst)]
 
     op1ToString = show

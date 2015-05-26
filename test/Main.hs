@@ -37,9 +37,9 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add (r0 v0) (r1 v0) (r2 v0)
-        add (r0 v0) (r1 v0) (r2 v0)
-        add (r0 v0) (r1 v0) (r2 v0)
+        add (r0 v0) (r1 v1) (r2 v2)
+        add (r0 v0) (r1 v1) (r2 v2)
+        add (r0 v0) (r1 v1) (r2 v2)
         return_
 
   it "Multiple instructions" $ asmTest 32
@@ -50,9 +50,9 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add (r0 v0) (r1 v0) (r2 v0)
-        add (r0 v0) (r1 v0) (r3 v0)
-        add (r0 v0) (r1 v0) (r2 v0)
+        add (r0 v0) (r1 v1) (r2 v2)
+        add (r0 v0) (r1 v1) (r3 v3)
+        add (r0 v0) (r1 v1) (r2 v2)
         return_
 
   it "More variables used than registers" $ asmTest 6
@@ -76,29 +76,29 @@ sanityTests = do
 
     label "entry" $ do
         lc (r0 v0)
-        lc (r1 v0)
-        lc (r2 v0)
-        lc (r3 v0)
-        lc (r4 v0)
-        lc (r5 v0)
+        lc (r1 v1)
+        lc (r2 v3)
+        lc (r3 v4)
+        lc (r4 v6)
+        lc (r5 v7)
         save (r5 v0) 0
-        lc (r5 v0)
+        lc (r5 v9)
         save (r5 v0) 8
-        lc (r5 v0)
+        lc (r5 v10)
         save (r5 v0) 16
-        lc (r5 v0)
+        lc (r5 v12)
         save (r5 v0) 24
-        lc (r5 v0)
-        add (r0 v0) (r1 v0) (r0 v0)
-        add (r2 v0) (r3 v0) (r1 v0)
+        lc (r5 v13)
+        add (r0 v0) (r1 v1) (r0 v2)
+        add (r2 v3) (r3 v4) (r1 v5)
         restore 0 (r3 v0)
-        add (r4 v0) (r3 v0) (r2 v0)
+        add (r4 v6) (r3 v7) (r2 v8)
         save (r0 v0) 32
         restore 8 (r4 v0)
         restore 16 (r0 v0)
-        add (r4 v0) (r0 v0) (r3 v0)
+        add (r4 v9) (r0 v10) (r3 v11)
         restore 24 (r4 v0)
-        add (r4 v0) (r5 v0) (r0 v0)
+        add (r4 v12) (r5 v13) (r0 v14)
         return_
 
   it "Single long-lived variable" $ asmTest 32
@@ -110,10 +110,10 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add (r0 v0) (r1 v0) (r1 v0)
-        add (r0 v0) (r2 v0) (r2 v0)
-        add (r0 v0) (r3 v0) (r3 v0)
-        add (r0 v0) (r4 v0) (r0 v0)
+        add (r0 v0) (r1 v1) (r1 v2)
+        add (r0 v0) (r2 v4) (r2 v5)
+        add (r0 v0) (r3 v7) (r3 v8)
+        add (r0 v0) (r4 v10) (r0 v11)
         return_
 
   it "Two long-lived variables" $ asmTest 32
@@ -125,10 +125,10 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add (r0 v0) (r1 v0) (r1 v0)
-        add (r0 v0) (r2 v0) (r3 v0)
-        add (r0 v0) (r2 v0) (r4 v0)
-        add (r0 v0) (r2 v0) (r0 v0)
+        add (r0 v0) (r1 v1) (r1 v2)
+        add (r0 v0) (r2 v4) (r3 v5)
+        add (r0 v0) (r2 v4) (r4 v8)
+        add (r0 v0) (r2 v4) (r0 v11)
         return_
 
   it "One variable with a long interval" $ asmTest 32
@@ -148,18 +148,18 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add (r0 v0) (r1 v0) (r1 v0)
-        add (r2 v0) (r3 v0) (r2 v0)
-        add (r4 v0) (r5 v0) (r3 v0)
-        add (r6 v0) (r7 v0) (r4 v0)
-        add (r8 v0) (r9 v0) (r5 v0)
-        add (r10 v0) (r11 v0) (r6 v0)
-        add (r12 v0) (r13 v0) (r7 v0)
-        add (r14 v0) (r15 v0) (r8 v0)
-        add (r16 v0) (r17 v0) (r9 v0)
-        add (r18 v0) (r19 v0) (r10 v0)
-        add (r20 v0) (r21 v0) (r11 v0)
-        add (r0 v0) (r22 v0) (r0 v0)
+        add (r0  v0)  (r1  v1)  (r1  v2)
+        add (r2  v3)  (r3  v4)  (r2  v5)
+        add (r4  v6)  (r5  v7)  (r3  v8)
+        add (r6  v9)  (r7  v10) (r4  v11)
+        add (r8  v12) (r9  v13) (r5  v14)
+        add (r10 v15) (r11 v16) (r6  v17)
+        add (r12 v18) (r13 v19) (r7  v20)
+        add (r14 v21) (r15 v22) (r8  v23)
+        add (r16 v24) (r17 v25) (r9  v26)
+        add (r18 v27) (r19 v28) (r10 v29)
+        add (r20 v30) (r21 v31) (r11 v32)
+        add (r0  v0)  (r22 v34) (r0  v35)
         return_
 
   it "Many variables with long intervals" $ asmTest 32
@@ -187,26 +187,26 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
-        add (r0 v0) (r1 v0) (r20 v0)
-        add (r2 v0) (r3 v0) (r21 v0)
-        add (r4 v0) (r5 v0) (r22 v0)
-        add (r6 v0) (r7 v0) (r23 v0)
-        add (r8 v0) (r9 v0) (r24 v0)
-        add (r10 v0) (r11 v0) (r25 v0)
-        add (r12 v0) (r13 v0) (r26 v0)
-        add (r14 v0) (r15 v0) (r27 v0)
-        add (r16 v0) (r17 v0) (r28 v0)
-        add (r18 v0) (r19 v0) (r29 v0)
-        add (r0 v0) (r1 v0) (r20 v0)
-        add (r2 v0) (r3 v0) (r21 v0)
-        add (r4 v0) (r5 v0) (r22 v0)
-        add (r6 v0) (r7 v0) (r23 v0)
-        add (r8 v0) (r9 v0) (r24 v0)
-        add (r10 v0) (r11 v0) (r25 v0)
-        add (r12 v0) (r13 v0) (r26 v0)
-        add (r14 v0) (r15 v0) (r27 v0)
-        add (r16 v0) (r17 v0) (r28 v0)
-        add (r18 v0) (r19 v0) (r29 v0)
+        add (r0  v0)  (r1 v1)   (r20 v2)
+        add (r2  v3)  (r3 v4)   (r21 v5)
+        add (r4  v6)  (r5 v7)   (r22 v8)
+        add (r6  v9)  (r7 v10)  (r23 v11)
+        add (r8  v12) (r9 v13)  (r24 v14)
+        add (r10 v15) (r11 v16) (r25 v17)
+        add (r12 v18) (r13 v19) (r26 v20)
+        add (r14 v21) (r15 v22) (r27 v23)
+        add (r16 v24) (r17 v25) (r28 v26)
+        add (r18 v27) (r19 v28) (r29 v29)
+        add (r0  v0)  (r1 v1)   (r20 v2)
+        add (r2  v3)  (r3 v4)   (r21 v5)
+        add (r4  v6)  (r5 v7)   (r22 v8)
+        add (r6  v9)  (r7 v10)  (r23 v11)
+        add (r8  v12) (r9 v13)  (r24 v14)
+        add (r10 v15) (r11 v16) (r25 v17)
+        add (r12 v18) (r13 v19) (r26 v20)
+        add (r14 v21) (r15 v22) (r27 v23)
+        add (r16 v24) (r17 v25) (r28 v26)
+        add (r18 v27) (r19 v28) (r29 v29)
         return_
 
 spillTests :: SpecWith ()
@@ -240,38 +240,38 @@ spillTests = do
         return_) $
 
     label "entry" $ do
-        add (r0  v0) (r1  v0) (r24 v0)
-        add (r2  v0) (r3  v0) (r25 v0)
-        add (r4  v0) (r5  v0) (r26 v0)
-        add (r6  v0) (r7  v0) (r27 v0)
-        add (r8  v0) (r9  v0) (r28 v0)
-        add (r10 v0) (r11 v0) (r29 v0)
-        add (r12 v0) (r13 v0) (r30 v0)
-        add (r14 v0) (r15 v0) (r31 v0)
+        add (r0  v0) (r1 v1) (r24 v2)
+        add (r2  v3) (r3 v4) (r25 v5)
+        add (r4  v6) (r5 v7) (r26 v8)
+        add (r6  v9) (r7 v10) (r27 v11)
+        add (r8  v12) (r9 v13) (r28 v14)
+        add (r10 v15) (r11 v16) (r29 v17)
+        add (r12 v18) (r13 v19) (r30 v20)
+        add (r14 v21) (r15 v22) (r31 v23)
         save (r31 v0) 0         -- jww (2015-05-26): These saves are unnecessary
-        add (r16 v0) (r17 v0) (r31 v0)
+        add (r16 v24) (r17 v25) (r31 v26)
         save (r31 v0) 8
-        add (r18 v0) (r19 v0) (r31 v0)
+        add (r18 v27) (r19 v28) (r31 v29)
         save (r31 v0) 16
-        add (r20 v0) (r21 v0) (r31 v0)
+        add (r20 v30) (r21 v31) (r31 v32)
         save (r31 v0) 24
-        add (r22 v0) (r23 v0) (r31 v0)
-        add (r0 v0) (r1 v0) (r24 v0)
-        add (r2 v0) (r3 v0) (r25 v0)
-        add (r4 v0) (r5 v0) (r26 v0)
-        add (r6 v0) (r7 v0) (r27 v0)
-        add (r8 v0) (r9 v0) (r28 v0)
-        add (r10 v0) (r11 v0) (r29 v0)
-        add (r12 v0) (r13 v0) (r30 v0)
+        add (r22 v33) (r23 v34) (r31 v35)
+        add (r0 v0) (r1 v1) (r24 v2)
+        add (r2 v3) (r3 v4) (r25 v5)
+        add (r4 v6) (r5 v7) (r26 v8)
+        add (r6 v9) (r7 v10) (r27 v11)
+        add (r8 v12) (r9 v13) (r28 v14)
+        add (r10 v15) (r11 v16) (r29 v17)
+        add (r12 v18) (r13 v19) (r30 v20)
         restore 0 (r0 v0)
-        add (r14 v0) (r15 v0) (r0 v0)
+        add (r14 v21) (r15 v22) (r0 v23)
         restore 8 (r1 v31)
-        add (r16 v0) (r17 v0) (r1 v0)
+        add (r16 v24) (r17 v25) (r1 v26)
         restore 16 (r2 v0)
-        add (r18 v0) (r19 v0) (r2 v0)
+        add (r18 v27) (r19 v28) (r2 v29)
         restore 24 (r3 v0)
-        add (r20 v0) (r21 v0) (r3 v0)
-        add (r22 v0) (r23 v0) (r31 v0)
+        add (r20 v30) (r21 v31) (r3 v32)
+        add (r22 v33) (r23 v34) (r31 v35)
         return_
 
   it "Spilling one variable" $ asmTest 32
@@ -421,18 +421,18 @@ blockTests = do
             return_) $
 
     do label "entry" $ do
-           add (r0 v0) (r1 v0) (r0 v0)
+           add (r0 v0) (r1 v1) (r0 v2)
            jump "L2"
 
        label "L2" $ do
-           add (r0 v0) (r2 v0) (r1 v0)
-           add (r0 v0) (r1 v0) (r1 v0)
+           add (r0 v2) (r2 v3) (r1 v4)
+           add (r0 v2) (r1 v4) (r1 v5)
            jump "L3"
 
        label "L3" $ do
-           add (r0 v0) (r1 v0) (r1 v0)
-           add (r0 v0) (r1 v0) (r1 v0)
-           add (r0 v0) (r1 v0) (r0 v0)
+           add (r0 v2) (r1 v5) (r1 v6)
+           add (r0 v2) (r1 v6) (r1 v7)
+           add (r0 v2) (r1 v7) (r0 v8)
            return_
 
   it "Inserts resolving moves" $ asmTest 3
@@ -477,7 +477,7 @@ blockTests = do
            jump "B4"
 
        label "B3" $ do
-           move (r2 v2) (r0 v2)
+           move (r2 v0) (r0 v0)
            add (r1 v1) (r0 v2) (r2 v3)
            jump "B4"
 
@@ -507,23 +507,23 @@ blockTests = do
             return_) $
 
     do label "entry" $ do
-           add (r0 v0) (r1 v0) (r2 v0)
-           branch (r2 v0) "B2" "B3"
+           add (r0 v0) (r1 v1) (r2 v2)
+           branch (r2 v2) "B2" "B3"
 
        label "B2" $ do
-           add (r1 v0) (r2 v0) (r3 v0)
-           add (r0 v0) (r0 v0) (r1 v0)
-           add (r0 v0) (r0 v0) (r2 v0)
-           add (r0 v0) (r1 v0) (r1 v0)
-           add (r0 v0) (r2 v0) (r1 v0)
+           add (r1 v1) (r2 v2) (r3 v3)
+           add (r0 v0) (r0 v0) (r1 v4)
+           add (r0 v0) (r0 v0) (r2 v5)
+           add (r0 v0) (r1 v4) (r1 v6)
+           add (r0 v0) (r2 v5) (r1 v6)
            jump "B4"
 
        label "B3" $ do
-           add (r1 v0) (r2 v0) (r3 v0)
+           add (r1 v1) (r2 v2) (r3 v3)
            jump "B4"
 
        label "B4" $ do
-           add (r3 v0) (r3 v0) (r0 v0)
+           add (r3 v3) (r3 v3) (r0 v0)
            return_
 
   it "Another resolution case" $ asmTest 4
@@ -682,19 +682,19 @@ loopTests = do
 \\tjump L2\n\
 \L2:\n\
 \\ttrace  \"B1\"\n\
-\\tbranch 0 L3 L4\n\
+\\tbranch r0|v1 L3 L4\n\
 \L3:\n\
 \\ttrace  \"B3\"\n\
 \\tjump L2\n\
 \L4:\n\
 \\ttrace  \"B2\"\n\
-\\tbranch 0 L5 L9\n\
+\\tbranch r0|v1 L5 L9\n\
 \L5:\n\
 \\ttrace  \"B5\"\n\
 \\treturn [] nop\n\
 \L6:\n\
 \\ttrace  \"B4\"\n\
-\\tbranch 0 L7 L8\n\
+\\tbranch r0|v1 L7 L8\n\
 \L7:\n\
 \\ttrace  \"B7\"\n\
 \\tjump L2\n\
