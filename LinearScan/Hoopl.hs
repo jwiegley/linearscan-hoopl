@@ -120,7 +120,7 @@ allocateHoopl :: (NonLocal (n v), NonLocal (n r), NodeAlloc n v r)
               -> Int             -- ^ Size of spilled register in bytes
               -> Label           -- ^ Label of graph entry block
               -> Graph (n v) C C -- ^ Program graph
-              -> Either String (Graph (n r) C C)
+              -> Either [String] (Graph (n r) C C)
 allocateHoopl regs offset slotSize entry graph =
     newGraph <$> runSimpleUniqueMonad' (1 + length blocks) go
   where

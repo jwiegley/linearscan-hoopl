@@ -5,6 +5,7 @@ module AsmTest where
 import Assembly
 import Compiler.Hoopl as Hoopl hiding ((<*>))
 import Control.Exception
+import Data.List (intercalate)
 import LinearScan
 import LinearScan.Hoopl
 import LinearScan.Hoopl.DSL
@@ -15,7 +16,7 @@ asmTestLiteral :: Int -> Program (Node IRVar) -> String -> Expectation
 asmTestLiteral regs program expected = do
     let (graph, entry) = runSimpleUniqueMonad $ compile "entry" program
     case allocateHoopl regs 0 8 entry graph of
-        Left err -> error $ "Allocation failed: " ++ err
+        Left err -> error $ "Allocation failed: " ++ intercalate "\n" err
         Right graph' -> do
             let g = showGraph show graph'
             catch (g `shouldBe` expected) $ \e -> do
