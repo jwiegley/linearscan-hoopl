@@ -11,8 +11,9 @@ import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Applicative
 import           Control.Arrow
 import           Control.Monad.Trans.Class
-import           Control.Monad.Trans.State (evalStateT, modify)
+import           Control.Monad.Trans.Tardis
 import           Data.Foldable
+import           Data.Functor.Identity
 import qualified Data.Map as M
 import           Data.Monoid
 import           Debug.Trace
@@ -55,14 +56,10 @@ blockInfo getBlockId = BlockInfo
     , splitCriticalEdge = \(BlockCC b m e)
                            (BlockCC next _ _) -> do
         let lab = entryLabel next
-        lab' <- lift freshLabel
-        modify $ \st ->
-            st { envLabels   = M.insert (show lab ++ "'") lab' (envLabels st)
-               , envBlockIds = let m = envBlockIds st in
-                               M.insert lab' (M.size m + 1) m
-               }
-        let e' = retargetBranch e lab lab'
-        return (BlockCC b m e',
+        (next:supply, stack) <- getPast
+        sendFuture (supply, stack)
+        let lab' = unsafeCoerce next
+        return (BlockCC b m (retargetBranch e lab lab'),
                 BlockCC (mkLabelOp lab') BNil (mkJumpOp lab))
 
     , blockOps = \(BlockCC a b z) ->
@@ -106,11 +103,6 @@ opInfo = OpInfo
            NodeOC n -> op1ToString n
     }
 
-newtype SimpleUniqueMonad' a = SUM' { unSUM' :: [Int] -> (a, [Int]) }
-
-runSimpleUniqueMonad' :: Int -> SimpleUniqueMonad a -> a
-runSimpleUniqueMonad' start m = fst (unSUM' (unsafeCoerce m) [start..])
-
 allocateHoopl :: (NodeAlloc nv nr, NonLocal nv, NonLocal nr)
               => Int             -- ^ Number of machine registers
               -> Int             -- ^ Offset of the spill stack
@@ -119,7 +111,7 @@ allocateHoopl :: (NodeAlloc nv nr, NonLocal nv, NonLocal nr)
               -> Graph nv C C -- ^ Program graph
               -> Either [String] (Graph nr C C)
 allocateHoopl regs offset slotSize entry graph =
-    newGraph <$> runSimpleUniqueMonad' (1 + length blocks) go
+    newGraph <$> runIdentity (go (1 + length blocks))
   where
     newGraph xs = GMany NothingO (newBody xs) NothingO
       where
@@ -129,7 +121,7 @@ allocateHoopl regs offset slotSize entry graph =
       where
         GMany NothingO body NothingO = graph
 
-    go = evalStateT alloc (newEnvState offset slotSize)
+    go n = evalTardisT alloc (mempty, ([n..], newSpillStack offset slotSize))
       where
         alloc = allocate regs (blockInfo getBlockId) opInfo blocks
           where

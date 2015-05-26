@@ -24,12 +24,14 @@ library
   exposed-modules:
     LinearScan.Hoopl
     LinearScan.Hoopl.DSL
-  build-depends:    base >=4.7 && <5
-                  , hoopl >= 3.10.0.1
-                  , linearscan >= 0.3.0.1
-                  , containers
-                  , transformers
-                  , free
+  build-depends:    
+      base       >=4.7 && <5
+    , hoopl      >= 3.10.0.1
+    , linearscan >= 0.3.0.1
+    , tardis     >= 0.3.0.0
+    , containers
+    , transformers
+    , free
 
 test-suite test
   default-language: Haskell2010
@@ -37,18 +39,21 @@ test-suite test
   ghc-options:      -Wall -fno-warn-deprecated-flags
   hs-source-dirs:   test
   main-is:          Main.hs
-  other-modules:    AsmTest
-                    Assembly
-                    Normal
+  other-modules:    
+    AsmTest
+    Assembly
+    Normal
+    Programs.Exhaustion1
   build-depends: 
-        base >=3
-      , linearscan
-      , hspec              >= 1.4.4
-      , hspec-expectations >= 0.3
-      , hoopl              >= 3.10.0.1 && < 3.11
-      , linearscan         >= 0.5.0.0
-      , linearscan-hoopl   >= 0.5.0.0
-      , containers         >= 0.5.5
-      , transformers       >= 0.3.0.0
-      , lens-family-core
-      , deepseq
+      base >=3
+    , linearscan
+    , hspec              >= 1.4.4
+    , hspec-expectations >= 0.3
+    , hoopl              >= 3.10.0.1 && < 3.11
+    , linearscan         >= 0.5.0.0
+    , linearscan-hoopl   >= 0.5.0.0
+    , containers         >= 0.5.5
+    , transformers       >= 0.3.0.0
+    , tardis             >= 0.3.0.0
+    , lens-family-core
+    , deepseq

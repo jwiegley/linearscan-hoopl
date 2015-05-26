@@ -1,20 +1,24 @@
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE RecursiveDo #-}
+
 module LinearScan.Hoopl.DSL where
 
 import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Applicative
 import           Control.Arrow (first)
+import           Control.Monad
+import           Control.Monad.Fix
 import           Control.Monad.Free
 import           Control.Monad.Trans.Class
 import qualified Control.Monad.Trans.Free as TF
 import           Control.Monad.Trans.Free hiding (FreeF(..), Free)
-import           Control.Monad.Trans.State (StateT, evalStateT,
-                                            gets, modify, get, put)
+import           Control.Monad.Trans.State
+import           Control.Monad.Trans.Tardis
 import qualified Data.Map as M
+import           Data.Maybe (fromMaybe)
 import           Data.Monoid
 import           LinearScan
-
-type Labels = M.Map String Label
-type BlockIds = M.Map Label Int
+import           Unsafe.Coerce
 
 data SpillStack = SpillStack
     { stackPtr      :: Int
@@ -23,14 +27,7 @@ data SpillStack = SpillStack
     }
     deriving (Eq, Show)
 
-data EnvState = EnvState
-    { envLabels      :: Labels
-    , envBlockIds    :: BlockIds
-    , envSpillStack  :: SpillStack
-    , envAssignments :: M.Map PhysReg VarId
-    }
-
-type Env = StateT EnvState SimpleUniqueMonad
+type Env = Tardis (M.Map PhysReg VarId) ([Int], SpillStack)
 
 newSpillStack :: Int -> Int -> SpillStack
 newSpillStack offset slotSize = SpillStack
@@ -39,30 +36,29 @@ newSpillStack offset slotSize = SpillStack
     , stackSlots    = mempty
     }
 
-newEnvState :: Int -> Int -> EnvState
-newEnvState offset slotSize = EnvState
-    { envLabels      = mempty
-    , envBlockIds    = mempty
-    , envSpillStack  = newSpillStack offset slotSize
-    , envAssignments = mempty
-    }
-
 getStackSlot :: Maybe VarId -> Env Int
 getStackSlot vid = do
-    st <- get
-    let stack = envSpillStack st
+    (supply, stack) <- getPast
     case M.lookup vid (stackSlots stack) of
         Just off -> return off
         Nothing -> do
             let off = stackPtr stack
-            put st { envSpillStack = stack
-                 { stackPtr   = off + stackSlotSize stack
-                 , stackSlots =
-                     M.insert vid off (stackSlots stack)
-                 }}
+            sendFuture (supply, stack
+                { stackPtr   = off + stackSlotSize stack
+                , stackSlots = M.insert vid off (stackSlots stack)
+                })
             return off
 
+setAssignment :: PhysReg -> VarId -> Env ()
+setAssignment = (modifyBackwards .) . M.insert
+
+getAssignment :: PhysReg -> Env VarId
+getAssignment reg =
+    fromMaybe (error $ "No assignment for register r" ++ show reg)
+        . M.lookup reg <$> getFuture
+
 -- | The 'Asm' monad lets us create labels by name and refer to them later.
+type Labels = M.Map String Label
 type Asm = StateT Labels SimpleUniqueMonad
 
 getLabel :: String -> Asm Label
@@ -74,18 +70,6 @@ getLabel str = do
             lbl <- lift freshLabel
             modify (M.insert str lbl)
             return lbl
-
-setAssignment :: PhysReg -> VarId -> Env ()
-setAssignment reg vid =
-    modify $ \env ->
-        env { envAssignments = M.insert reg vid (envAssignments env) }
-
-getAssignment :: PhysReg -> Env VarId
-getAssignment reg = do
-    l <- gets (M.lookup reg . envAssignments)
-    case l of
-        Just vid -> return vid
-        Nothing  -> error $ "No assignment for register: " ++ show reg
 
 -- | A series of 'Nodes' is a set of assembly instructions that ends with some
 --   kind of closing operation, such as a jump, branch or return.
