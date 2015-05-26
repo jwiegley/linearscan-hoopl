@@ -18,8 +18,10 @@ instance NFData IRVar where
     rnf (VirtualIV r) = r `deepseq` ()
 
 instance NFData v => NFData (Instruction v) where
-    rnf (Add x y z) = x `deepseq` y `deepseq` z `deepseq` ()
-    rnf Nop = ()
+    rnf (Add x y z)  = x `deepseq` y `deepseq` z `deepseq` ()
+    rnf (Offp x y z) = x `deepseq` y `deepseq` z `deepseq` ()
+    rnf (Offlpi x)   = x `deepseq` ()
+    rnf Nop          = ()
 
 instance NFData CConv where
     rnf InlineC = ()
