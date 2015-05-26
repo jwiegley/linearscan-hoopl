@@ -165,12 +165,7 @@ instance Show IRVar where
     show (PhysicalIV r) = "r" ++ show r
     show (VirtualIV n)  = "v" ++ show n
 
-instance NodeAlloc Node IRVar (Assign VarId PhysReg) where
-    fromVar (PhysicalIV r) = Left r
-    fromVar (VirtualIV n)  = Right n
-
-    fromReg (Assign _ r) = r
-
+instance NodeAlloc (Node IRVar) (Node (Assign VarId PhysReg)) where
     isCall (Call {}) = True
     isCall _ = False
 

@@ -20,36 +20,33 @@ import           LinearScan
 import           LinearScan.Hoopl.DSL
 import           Unsafe.Coerce
 
-class HooplNode (n v) => NodeAlloc n v r | n -> v, n -> r where
-    fromVar :: v -> Either PhysReg VarId
-    fromReg :: r -> PhysReg
+class HooplNode nv => NodeAlloc nv nr | nv -> nr, nr -> nv where
+    isCall   :: nv O O -> Bool
+    isBranch :: nv O C -> Bool
 
-    isCall   :: n v O O -> Bool
-    isBranch :: n v O C -> Bool
+    retargetBranch :: nv O C -> Label -> Label -> nv O C
 
-    retargetBranch :: n v O C -> Label -> Label -> n v O C
+    mkLabelOp :: Label -> nv C O
+    mkJumpOp  :: Label -> nv O C
 
-    mkLabelOp :: Label -> n v C O
-    mkJumpOp  :: Label -> n v O C
+    getReferences :: nv e x -> [VarInfo]
+    setRegisters  :: [(Int, PhysReg)] -> nv e x -> Env (nr e x)
 
-    getReferences :: n v e x -> [VarInfo]
-    setRegisters  :: [(Int, PhysReg)] -> n v e x -> Env (n r e x)
+    mkMoveOps    :: PhysReg -> PhysReg -> Env [nr O O]
+    mkSwapOps    :: PhysReg -> PhysReg -> Env [nr O O]
+    mkSaveOps    :: PhysReg -> Maybe VarId -> Env [nr O O]
+    mkRestoreOps :: Maybe VarId -> PhysReg -> Env [nr O O]
 
-    mkMoveOps    :: PhysReg -> PhysReg -> Env [n r O O]
-    mkSwapOps    :: PhysReg -> PhysReg -> Env [n r O O]
-    mkSaveOps    :: PhysReg -> Maybe VarId -> Env [n r O O]
-    mkRestoreOps :: Maybe VarId -> PhysReg -> Env [n r O O]
-
-    op1ToString  :: n v e x -> String
+    op1ToString  :: nv e x -> String
 
 data NodeV n = NodeCO { getNodeCO :: n C O }
              | NodeOO { getNodeOO :: n O O }
              | NodeOC { getNodeOC :: n O C }
 
-blockInfo :: (NodeAlloc n v r, NonLocal (n v))
+blockInfo :: (NodeAlloc nv nr, NonLocal nv, NonLocal nr)
           => (Label -> Env Int)
-          -> BlockInfo Env (Block (n v) C C) (Block (n r) C C)
-                           (NodeV (n v)) (NodeV (n r))
+          -> BlockInfo Env (Block nv C C) (Block nr C C)
+                           (NodeV nv) (NodeV nr)
 blockInfo getBlockId = BlockInfo
     { blockId = getBlockId . entryLabel
 
@@ -78,11 +75,11 @@ blockInfo getBlockId = BlockInfo
             (getNodeOC z)
     }
 
-opInfo :: NodeAlloc n v r => OpInfo Env (NodeV (n v)) (NodeV (n r))
+opInfo :: NodeAlloc nv nr => OpInfo Env (NodeV nv) (NodeV nr)
 opInfo = OpInfo
     { opKind = \node -> case node of
-           NodeOO n | isCall n  -> IsCall
-                    | otherwise -> IsNormal
+           NodeOO n | isCall n   -> IsCall
+                    | otherwise  -> IsNormal
            NodeOC n | isBranch n -> IsBranch
                     | otherwise  -> IsNormal
            _ -> IsNormal
@@ -114,13 +111,13 @@ newtype SimpleUniqueMonad' a = SUM' { unSUM' :: [Int] -> (a, [Int]) }
 runSimpleUniqueMonad' :: Int -> SimpleUniqueMonad a -> a
 runSimpleUniqueMonad' start m = fst (unSUM' (unsafeCoerce m) [start..])
 
-allocateHoopl :: (NonLocal (n v), NonLocal (n r), NodeAlloc n v r)
+allocateHoopl :: (NodeAlloc nv nr, NonLocal nv, NonLocal nr)
               => Int             -- ^ Number of machine registers
               -> Int             -- ^ Offset of the spill stack
               -> Int             -- ^ Size of spilled register in bytes
               -> Label           -- ^ Label of graph entry block
-              -> Graph (n v) C C -- ^ Program graph
-              -> Either [String] (Graph (n r) C C)
+              -> Graph nv C C -- ^ Program graph
+              -> Either [String] (Graph nr C C)
 allocateHoopl regs offset slotSize entry graph =
     newGraph <$> runSimpleUniqueMonad' (1 + length blocks) go
   where
