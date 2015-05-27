@@ -5,9 +5,9 @@ module Main where
 
 import AsmTest
 import Assembly
-import Generated
+-- import Generated
 import LinearScan.Hoopl.DSL
-import Programs.Blocked
+-- import Programs.Blocked
 import Programs.Exhaustion
 import Test.Hspec
 
@@ -25,9 +25,9 @@ main = hspec $ do
 
   describe "Program tests" $ do
     it "Near exhaustion program" $ asmTest_ 32 exhaustion1
-    it "Blocked register program" $ asmTest_ 32 regBlocked
+    -- it "Blocked register program" $ asmTest_ 32 regBlocked
 
-  describe "Generated tests" generatedTests
+  -- describe "Generated tests" generatedTests
 
 sanityTests :: SpecWith ()
 sanityTests = do
@@ -686,29 +686,29 @@ loopTests = do
             trace "B7"
             jump "B1") $
 
-    Just "L1:\n\
-\\ttrace  \"B0\"\n\
-\\tjump L2\n\
-\L2:\n\
-\\ttrace  \"B1\"\n\
-\\tbranch r0|v1 L3 L4\n\
-\L3:\n\
-\\ttrace  \"B3\"\n\
-\\tjump L2\n\
-\L4:\n\
-\\ttrace  \"B2\"\n\
-\\tbranch r0|v1 L5 L9\n\
-\L5:\n\
-\\ttrace  \"B5\"\n\
-\\treturn_\n\
-\L6:\n\
-\\ttrace  \"B4\"\n\
-\\tbranch r0|v1 L7 L8\n\
-\L7:\n\
-\\ttrace  \"B7\"\n\
-\\tjump L2\n\
-\L8:\n\
-\\ttrace  \"B6\"\n\
-\\tjump L6\n\
-\L9:\n\
-\\tjump L6\n"
+    Just "    label \"L1\" $ do\n\
+\        trace  \"B0\"\n\
+\        jump \"L2\"\n\
+\    label \"L2\" $ do\n\
+\        trace  \"B1\"\n\
+\        branch r0|v1 \"L3\" \"L4\"\n\
+\    label \"L3\" $ do\n\
+\        trace  \"B3\"\n\
+\        jump \"L2\"\n\
+\    label \"L4\" $ do\n\
+\        trace  \"B2\"\n\
+\        branch r0|v1 \"L5\" \"L9\"\n\
+\    label \"L5\" $ do\n\
+\        trace  \"B5\"\n\
+\        return_\n\
+\    label \"L6\" $ do\n\
+\        trace  \"B4\"\n\
+\        branch r0|v1 \"L7\" \"L8\"\n\
+\    label \"L7\" $ do\n\
+\        trace  \"B7\"\n\
+\        jump \"L2\"\n\
+\    label \"L8\" $ do\n\
+\        trace  \"B6\"\n\
+\        jump \"L6\"\n\
+\    label \"L9\" $ do\n\
+\        jump \"L6\"\n"

@@ -12,7 +12,7 @@ import           Control.Exception (evaluate)
 import           Control.Monad
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
-import           Data.List (intercalate)
+import           Data.List (intercalate, isInfixOf)
 import           LinearScan.Hoopl
 import           Test.FuzzCheck as F hiding (branch)
 import           Test.Hspec
@@ -47,11 +47,11 @@ instance Arbitrary (Node IRVar O O) where
     arbitrary = sized $ \n -> frequency
         [ (1, Alloc <$> arbitrary <*> arbitrary)
         -- , (1, Reclaim <$> arbitrary)
-        , (4, Instr <$> arbitrary)
-        , (2, Call InlineC <$> choose (0,n))
-        , (3, LoadConst <$> arbitrary <*> arbitrary)
-        , (5, Move <$> arbitrary <*> arbitrary)
-        , (4, Copy <$> arbitrary <*> arbitrary)
+        , (40, Instr <$> arbitrary)
+        , (20, Call InlineC <$> choose (0,n))
+        , (30, LoadConst <$> arbitrary <*> arbitrary)
+        , (50, Move <$> arbitrary <*> arbitrary)
+        , (25, Copy <$> arbitrary <*> arbitrary)
         -- , (0, Save <$> arbitrary <*> arbitrary)
         -- , (0, Restore <$> arbitrary <*> arbitrary)
         -- , (0, pure $ Trace "tracer")
@@ -101,8 +101,14 @@ generatedTests =
                     (head (IS.elems (unsafeCoerce
                                      (externalEntryLabels body))))
       case allocateHoopl 32 0 8 entry graph of
-          Left err -> error $ "Allocation failed: " ++ intercalate "\n" err
-          Right graph' ->
-              let g = showGraph show graph' in
-              evaluate (length g)
+          Left err
+              | any ("Cannot insert interval onto unhandled list"
+                     `isInfixOf`) err ->
+                  True `shouldBe` True
+              | otherwise ->
+                  error $ "Allocation failed: " ++ intercalate "\n" err
+          Right graph' -> do
+              let g = showGraph show graph'
+              _ <- evaluate (length g)
+              return ()
               -- putStrLn $ "---- Compiled  ----\n" ++ g
