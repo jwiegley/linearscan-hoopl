@@ -14,6 +14,7 @@ import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Tardis
 import           Data.Foldable
 import           Data.Functor.Identity
+import qualified Data.IntMap as IM
 import qualified Data.Map as M
 import           Data.Monoid
 import           Debug.Trace
@@ -111,15 +112,14 @@ allocateHoopl :: (NodeAlloc nv nr, NonLocal nv, NonLocal nr)
               -> Graph nv C C -- ^ Program graph
               -> Either [String] (Graph nr C C)
 allocateHoopl regs offset slotSize entry graph =
-    newGraph <$> runIdentity (go (1 + length blocks))
+    newGraph <$> runIdentity (go (1 + IM.size (unsafeCoerce body)))
   where
     newGraph xs = GMany NothingO (newBody xs) NothingO
       where
         newBody = Data.Foldable.foldl' (flip addBlock) emptyBody
 
     blocks = postorder_dfs_from body entry
-      where
-        GMany NothingO body NothingO = graph
+    GMany NothingO body NothingO = graph
 
     go n = evalTardisT alloc (mempty, ([n..], newSpillStack offset slotSize))
       where

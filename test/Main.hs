@@ -5,7 +5,7 @@ module Main where
 
 import AsmTest
 import Assembly
--- import Generated
+import Generated
 import LinearScan.Hoopl.DSL
 -- import Programs.Blocked
 import Programs.Exhaustion
@@ -27,7 +27,7 @@ main = hspec $ do
     it "Near exhaustion program" $ asmTest_ 32 exhaustion1
     -- it "Blocked register program" $ asmTest_ 32 regBlocked
 
-  -- describe "Generated tests" generatedTests
+  describe "Generated tests" generatedTests
 
 sanityTests :: SpecWith ()
 sanityTests = do
