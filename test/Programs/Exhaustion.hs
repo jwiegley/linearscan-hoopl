@@ -1,4 +1,4 @@
-module Programs.Exhaustion1 where
+module Programs.Exhaustion where
 
 import Assembly
 import LinearScan.Hoopl.DSL

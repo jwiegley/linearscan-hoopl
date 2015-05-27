@@ -79,24 +79,23 @@ data Node v e x where
 deriving instance Eq v => Eq (Node v e x)
 
 instance (Show v, VarReg v) => Show (Node v e x) where
-    show (Label l)         = show l ++ ":"
-    show (Alloc x1 x2)     = "\talloc " ++
-                             (case x1 of Just v -> " " ++ show v ; _ -> " _")
-                             ++ " " ++ show x2
-    show (Reclaim v)       = "\treclaim " ++ show v
-    show (Instr i)         = "\t" ++ show i
-    show (Call c l)        = "\tcall " ++ show c ++ " " ++ show l
-    show (LoadConst _c v)  = "\tlc " ++ show v -- ++ " " ++ show c
-    show (Move x1 x2)      = "\tmove " ++ show x1 ++ " " ++ show x2
-    show (Copy x1 x2)      = "\tcopy " ++ show x1 ++ " " ++ show x2
-    show (Save src dst)    = "\tsave " ++ show (varReg src) ++ " " ++ show dst
-    show (Restore src dst) = "\trestore " ++ show src ++ " "
+    show (Label l)         = "    label \"" ++ show l ++ "\" $ do"
+    show (Alloc x1 x2)     = "        alloc " ++ show x1 ++ " " ++ show x2
+    show (Reclaim v)       = "        reclaim " ++ show v
+    show (Instr i)         = "        " ++ show i
+    show (Call _ l)        = "        call " ++ show l
+    show (LoadConst _c v)  = "        lc " ++ show v -- ++ " " ++ show c
+    show (Move x1 x2)      = "        move " ++ show x1 ++ " " ++ show x2
+    show (Copy x1 x2)      = "        copy " ++ show x1 ++ " " ++ show x2
+    show (Save src dst)    = "        save " ++ show (varReg src) ++ " "
+                          ++ show dst
+    show (Restore src dst) = "        restore " ++ show src ++ " "
                           ++ show (varReg dst)
-    show (Trace str)       = "\ttrace " ++ " " ++ show str
-    show (Jump l)          = "\tjump " ++ show l
-    show (Branch _ v t f)  = "\tbranch " ++ show v
-                          ++ " " ++ show t ++ " " ++ show f
-    show (ReturnInstr regs i) = "\treturn " ++ show regs ++ " " ++ show i
+    show (Trace str)       = "        trace " ++ " " ++ show str
+    show (Jump l)          = "        jump \"" ++ show l ++ "\""
+    show (Branch _ v t f)  = "        branch " ++ show v
+                          ++ " \"" ++ show t ++ "\" \"" ++ show f ++ "\""
+    show (ReturnInstr _regs _i) = "        return_"
 
 instance NonLocal (Node v) where
   entryLabel (Label l) = l
@@ -189,7 +188,7 @@ instance VarReg (Assign a PhysReg) where
 data IRVar = PhysicalIV PhysReg | VirtualIV Int deriving Eq
 
 instance Show IRVar where
-    show (PhysicalIV r) = "r" ++ show r
+    show (PhysicalIV r) = "pr" ++ show r
     show (VirtualIV n)  = "v" ++ show n
 
 instance NodeAlloc (Node IRVar) (Node (Assign VarId PhysReg)) where
@@ -212,19 +211,22 @@ instance NodeAlloc (Node IRVar) (Node (Assign VarId PhysReg)) where
     getReferences = go
       where
         go :: Node IRVar e x -> [VarInfo]
+        go (Label _)         = mempty
         go (Alloc msrc dst)  = F.concatMap (mkv Input) (maybeToList msrc) <>
                                mkv Output dst <>
                                [ vinfo Output (Left n) | n <- [2..16] ]
-        go (Label _)         = mempty
+        go (Reclaim src)     = mkv Input src
         go (Instr i)         = fromInstr i
-        go (Jump _)          = mempty
         go (Call _ _)        = mempty
-        go (Move src dst)    = mkv Input src <> mkv Output dst
         go (LoadConst _ v)   = mkv Output v
-        go (Branch _ v _ _)  = mkv Input v
+        go (Move src dst)    = mkv Input src <> mkv Output dst
+        go (Copy src dst)    = mkv Input src <> mkv Output dst
+        go (Save src _)      = mkv Input src
+        go (Restore _ dst)   = mkv Output dst
         go (Trace _)         = mempty
+        go (Jump _)          = mempty
+        go (Branch _ v _ _)  = mkv Input v
         go (ReturnInstr _ i) = fromInstr i
-        go n = error $ "getReferences: unhandled node: " ++ show n
 
         fromInstr :: Instruction IRVar -> [VarInfo]
         fromInstr Nop = mempty
@@ -245,7 +247,7 @@ instance NodeAlloc (Node IRVar) (Node (Assign VarId PhysReg)) where
             }
 
     setRegisters m g = do
-        for_ m $ \(v, r) -> setAssignment r v
+        -- for_ m $ \(v, r) -> setAssignment r v
         return $ over variables go g
       where
         go :: IRVar -> Assign VarId PhysReg

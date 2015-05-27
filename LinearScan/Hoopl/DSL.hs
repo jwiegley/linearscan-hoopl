@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module LinearScan.Hoopl.DSL where
 
@@ -19,6 +21,7 @@ import           Data.Maybe (fromMaybe)
 import           Data.Monoid
 import           LinearScan
 import           Unsafe.Coerce
+import           Test.QuickCheck
 
 data SpillStack = SpillStack
     { stackPtr      :: Int

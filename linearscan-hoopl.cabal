@@ -32,6 +32,7 @@ library
     , containers
     , transformers
     , free
+    , QuickCheck
 
 test-suite test
   default-language: Haskell2010
@@ -43,7 +44,9 @@ test-suite test
     AsmTest
     Assembly
     Normal
-    Programs.Exhaustion1
+    Generated
+    Programs.Blocked
+    Programs.Exhaustion
   build-depends: 
       base >=3
     , linearscan
@@ -57,3 +60,5 @@ test-suite test
     , tardis             >= 0.3.0.0
     , lens-family-core
     , deepseq
+    , QuickCheck
+    , fuzzcheck

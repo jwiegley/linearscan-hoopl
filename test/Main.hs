@@ -1,9 +1,14 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 module Main where
 
 import AsmTest
 import Assembly
+import Generated
 import LinearScan.Hoopl.DSL
-import Programs.Exhaustion1
+import Programs.Blocked
+import Programs.Exhaustion
 import Test.Hspec
 
 -- | The objective of these tests is to present a program to the register
@@ -17,6 +22,12 @@ main = hspec $ do
   describe "Block tests" blockTests
   describe "Call tests" callTests
   describe "Loop tests" loopTests
+
+  describe "Program tests" $ do
+    it "Near exhaustion program" $ asmTest_ 32 exhaustion1
+    it "Blocked register program" $ asmTest_ 32 regBlocked
+
+  describe "Generated tests" generatedTests
 
 sanityTests :: SpecWith ()
 sanityTests = do
@@ -400,8 +411,6 @@ spillTests = do
         add (r0 v8) (r1 v1) (r0 v0)
         return_
 
-  it "Handles a case of near exhaustion" $ asmTest_ 32 exhaustion1
-
 blockTests :: SpecWith ()
 blockTests = do
   it "Allocates across blocks" $ asmTest 32
@@ -691,7 +700,7 @@ loopTests = do
 \\tbranch r0|v1 L5 L9\n\
 \L5:\n\
 \\ttrace  \"B5\"\n\
-\\treturn [] nop\n\
+\\treturn_\n\
 \L6:\n\
 \\ttrace  \"B4\"\n\
 \\tbranch r0|v1 L7 L8\n\
