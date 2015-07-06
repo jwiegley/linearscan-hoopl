@@ -105,13 +105,14 @@ opInfo = OpInfo
     }
 
 allocateHoopl :: (NodeAlloc nv nr, NonLocal nv, NonLocal nr)
-              => Int             -- ^ Number of machine registers
-              -> Int             -- ^ Offset of the spill stack
-              -> Int             -- ^ Size of spilled register in bytes
-              -> Label           -- ^ Label of graph entry block
+              => Int          -- ^ Number of machine registers
+              -> Int          -- ^ Offset of the spill stack
+              -> Int          -- ^ Size of spilled register in bytes
+              -> UseVerifier  -- ^ Whether to use allocation verifier
+              -> Label        -- ^ Label of graph entry block
               -> Graph nv C C -- ^ Program graph
               -> Either [String] (Graph nr C C)
-allocateHoopl regs offset slotSize entry graph =
+allocateHoopl regs offset slotSize useVerifier entry graph =
     newGraph <$> runIdentity (go (1 + IM.size (unsafeCoerce body)))
   where
     newGraph xs = GMany NothingO (newBody xs) NothingO
@@ -123,7 +124,7 @@ allocateHoopl regs offset slotSize entry graph =
 
     go n = evalTardisT alloc (mempty, ([n..], newSpillStack offset slotSize))
       where
-        alloc = allocate regs (blockInfo getBlockId) opInfo blocks
+        alloc = allocate regs (blockInfo getBlockId) opInfo useVerifier blocks
           where
             getBlockId :: Hoopl.Label -> Env Int
             getBlockId = return . unsafeCoerce

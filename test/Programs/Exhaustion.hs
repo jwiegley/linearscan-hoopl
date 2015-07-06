@@ -6,6 +6,7 @@ import LinearScan.Hoopl.DSL
 exhaustion1 :: Program (Node IRVar)
 exhaustion1 = do
     label "entry" $ do
+        lc v206
         move pr1 v4
         move pr2 v5
         move pr3 v6

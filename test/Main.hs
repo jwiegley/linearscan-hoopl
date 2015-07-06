@@ -33,21 +33,29 @@ sanityTests :: SpecWith ()
 sanityTests = do
   it "Single instruction" $ asmTest 32
     (label "entry" $ do
+        lc v0
+        lc v1
         add v0 v1 v2
         return_) $
 
     label "entry" $ do
+        lc (r0 v0)
+        lc (r1 v1)
         add (r0 v0) (r1 v1) (r0 v2)
         return_
 
   it "Single, repeated instruction" $ asmTest 32
     (label "entry" $ do
+        lc v0
+        lc v1
         add v0 v1 v2
         add v0 v1 v2
         add v0 v1 v2
         return_) $
 
     label "entry" $ do
+        lc (r0 v0)
+        lc (r1 v1)
         add (r0 v0) (r1 v1) (r2 v2)
         add (r0 v0) (r1 v1) (r2 v2)
         add (r0 v0) (r1 v1) (r2 v2)
@@ -55,12 +63,16 @@ sanityTests = do
 
   it "Multiple instructions" $ asmTest 32
     (label "entry" $ do
+        lc v0
+        lc v1
         add v0 v1 v2
         add v0 v1 v3
         add v0 v1 v2
         return_) $
 
     label "entry" $ do
+        lc (r0 v0)
+        lc (r1 v1)
         add (r0 v0) (r1 v1) (r2 v2)
         add (r0 v0) (r1 v1) (r3 v3)
         add (r0 v0) (r1 v1) (r2 v2)
@@ -114,6 +126,11 @@ sanityTests = do
 
   it "Single long-lived variable" $ asmTest 32
     (label "entry" $ do
+        lc v0
+        lc v1
+        lc v4
+        lc v7
+        lc v10
         add v0 v1 v2
         add v0 v4 v5
         add v0 v7 v8
@@ -121,6 +138,11 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
+        lc (r0 v0)
+        lc (r1 v1)
+        lc (r2 v4)
+        lc (r3 v7)
+        lc (r4 v10)
         add (r0 v0) (r1 v1) (r1 v2)
         add (r0 v0) (r2 v4) (r2 v5)
         add (r0 v0) (r3 v7) (r3 v8)
@@ -129,6 +151,9 @@ sanityTests = do
 
   it "Two long-lived variables" $ asmTest 32
     (label "entry" $ do
+        lc v0
+        lc v1
+        lc v4
         add v0 v1 v2
         add v0 v4 v5
         add v0 v4 v8
@@ -136,6 +161,9 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
+        lc (r0 v0)
+        lc (r1 v1)
+        lc (r2 v4)
         add (r0 v0) (r1 v1) (r1 v2)
         add (r0 v0) (r2 v4) (r3 v5)
         add (r0 v0) (r2 v4) (r4 v8)
@@ -144,6 +172,29 @@ sanityTests = do
 
   it "One variable with a long interval" $ asmTest 32
     (label "entry" $ do
+        lc v0
+        lc v1
+        lc v3
+        lc v4
+        lc v6
+        lc v7
+        lc v9
+        lc v10
+        lc v12
+        lc v13
+        lc v15
+        lc v16
+        lc v18
+        lc v19
+        lc v21
+        lc v22
+        lc v24
+        lc v25
+        lc v27
+        lc v28
+        lc v30
+        lc v31
+        lc v34
         add v0   v1  v2
         add v3   v4  v5
         add v6   v7  v8
@@ -159,6 +210,29 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
+        lc (r0 v0)
+        lc (r1 v1)
+        lc (r2 v3)
+        lc (r3 v4)
+        lc (r4 v6)
+        lc (r5 v7)
+        lc (r6 v9)
+        lc (r7 v10)
+        lc (r8 v12)
+        lc (r9 v13)
+        lc (r10 v15)
+        lc (r11 v16)
+        lc (r12 v18)
+        lc (r13 v19)
+        lc (r14 v21)
+        lc (r15 v22)
+        lc (r16 v24)
+        lc (r17 v25)
+        lc (r18 v27)
+        lc (r19 v28)
+        lc (r20 v30)
+        lc (r21 v31)
+        lc (r22 v34)
         add (r0  v0)  (r1  v1)  (r1  v2)
         add (r2  v3)  (r3  v4)  (r2  v5)
         add (r4  v6)  (r5  v7)  (r3  v8)
@@ -175,6 +249,26 @@ sanityTests = do
 
   it "Many variables with long intervals" $ asmTest 32
     (label "entry" $ do
+        lc v0
+        lc v1
+        lc v3
+        lc v4
+        lc v6
+        lc v7
+        lc v9
+        lc v10
+        lc v12
+        lc v13
+        lc v15
+        lc v16
+        lc v18
+        lc v19
+        lc v21
+        lc v22
+        lc v24
+        lc v25
+        lc v27
+        lc v28
         add v0   v1  v2
         add v3   v4  v5
         add v6   v7  v8
@@ -198,6 +292,26 @@ sanityTests = do
         return_) $
 
     label "entry" $ do
+        lc (r0 v0)
+        lc (r1 v1)
+        lc (r2 v3)
+        lc (r3 v4)
+        lc (r4 v6)
+        lc (r5 v7)
+        lc (r6 v9)
+        lc (r7 v10)
+        lc (r8 v12)
+        lc (r9 v13)
+        lc (r10 v15)
+        lc (r11 v16)
+        lc (r12 v18)
+        lc (r13 v19)
+        lc (r14 v21)
+        lc (r15 v22)
+        lc (r16 v24)
+        lc (r17 v25)
+        lc (r18 v27)
+        lc (r19 v28)
         add (r0  v0)  (r1 v1)   (r20 v2)
         add (r2  v3)  (r3 v4)   (r21 v5)
         add (r4  v6)  (r5 v7)   (r22 v8)
@@ -224,6 +338,30 @@ spillTests :: SpecWith ()
 spillTests = do
   it "No spilling necessary" $ asmTest 32
     (label "entry" $ do
+        lc v0
+        lc v1
+        lc v3
+        lc v4
+        lc v6
+        lc v7
+        lc v9
+        lc v10
+        lc v12
+        lc v13
+        lc v15
+        lc v16
+        lc v18
+        lc v19
+        lc v21
+        lc v22
+        lc v24
+        lc v25
+        lc v27
+        lc v28
+        lc v30
+        lc v31
+        lc v33
+        lc v34
         add v0   v1  v2
         add v3   v4  v5
         add v6   v7  v8
@@ -251,6 +389,30 @@ spillTests = do
         return_) $
 
     label "entry" $ do
+        lc (r0 v0)
+        lc (r1 v1)
+        lc (r2 v3)
+        lc (r3 v4)
+        lc (r4 v6)
+        lc (r5 v7)
+        lc (r6 v9)
+        lc (r7 v10)
+        lc (r8 v12)
+        lc (r9 v13)
+        lc (r10 v15)
+        lc (r11 v16)
+        lc (r12 v18)
+        lc (r13 v19)
+        lc (r14 v21)
+        lc (r15 v22)
+        lc (r16 v24)
+        lc (r17 v25)
+        lc (r18 v27)
+        lc (r19 v28)
+        lc (r20 v30)
+        lc (r21 v31)
+        lc (r22 v33)
+        lc (r23 v34)
         add (r0  v0) (r1 v1) (r24 v2)
         add (r2  v3) (r3 v4) (r25 v5)
         add (r4  v6) (r5 v7) (r26 v8)
@@ -287,6 +449,28 @@ spillTests = do
 
   it "Spilling one variable" $ asmTest 32
     (label "entry" $ do
+        lc v0
+        lc v1
+        lc v3
+        lc v4
+        lc v6
+        lc v7
+        lc v9
+        lc v10
+        lc v12
+        lc v13
+        lc v15
+        lc v16
+        lc v18
+        lc v19
+        lc v21
+        lc v22
+        lc v24
+        lc v25
+        lc v27
+        lc v28
+        lc v30
+        lc v31
         add v0   v1  v2
         add v3   v4  v5
         add v6   v7  v8
@@ -312,6 +496,28 @@ spillTests = do
         return_) $
 
     label "entry" $ do
+        lc (r0 v0)
+        lc (r1 v1)
+        lc (r2 v3)
+        lc (r3 v4)
+        lc (r4 v6)
+        lc (r5 v7)
+        lc (r6 v9)
+        lc (r7 v10)
+        lc (r8 v12)
+        lc (r9 v13)
+        lc (r10 v15)
+        lc (r11 v16)
+        lc (r12 v18)
+        lc (r13 v19)
+        lc (r14 v21)
+        lc (r15 v22)
+        lc (r16 v24)
+        lc (r17 v25)
+        lc (r18 v27)
+        lc (r19 v28)
+        lc (r20 v30)
+        lc (r21 v31)
         add (r0  v0)  (r1  v1)  (r22 v2)
         add (r2  v3)  (r3  v4)  (r23 v5)
         add (r4  v6)  (r5  v7)  (r24 v8)
@@ -415,10 +621,13 @@ blockTests :: SpecWith ()
 blockTests = do
   it "Allocates across blocks" $ asmTest 32
     (do label "entry" $ do
+            lc v0
+            lc v1
             add v0 v1 v2
             jump "L2"
 
         label "L2" $ do
+            lc v3
             add v2 v3 v4
             add v2 v4 v5
             jump "L3"
@@ -430,11 +639,14 @@ blockTests = do
             return_) $
 
     do label "entry" $ do
+           lc (r0 v0)
+           lc (r1 v1)
            add (r0 v0) (r1 v1) (r0 v2)
            jump "L2"
 
        label "L2" $ do
-           add (r0 v2) (r2 v3) (r1 v4)
+           lc (r1 v3)
+           add (r0 v2) (r1 v3) (r1 v4)
            add (r0 v2) (r1 v4) (r1 v5)
            jump "L3"
 
@@ -496,6 +708,8 @@ blockTests = do
 
   it "When resolving moves are not needed" $ asmTest 4
     (do label "entry" $ do
+            lc v0
+            lc v1
             add v0 v1 v2
             branch v2 "B3" "B2"
 
@@ -516,6 +730,8 @@ blockTests = do
             return_) $
 
     do label "entry" $ do
+           lc (r0 v0)
+           lc (r1 v1)
            add (r0 v0) (r1 v1) (r2 v2)
            branch (r2 v2) "B2" "B3"
 
@@ -660,6 +876,7 @@ loopTests = do
 
         label "B1" $ do
             trace "B1"
+            lc v1
             branch v1 "B3" "B2"
 
         label "B2" $ do
@@ -691,6 +908,7 @@ loopTests = do
 \        jump \"L2\"\n\
 \    label \"L2\" $ do\n\
 \        trace  \"B1\"\n\
+\        lc r0|v1\n\
 \        branch r0|v1 \"L3\" \"L4\"\n\
 \    label \"L3\" $ do\n\
 \        trace  \"B3\"\n\
