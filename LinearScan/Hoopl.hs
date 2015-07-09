@@ -111,7 +111,7 @@ allocateHoopl :: (NodeAlloc nv nr, NonLocal nv, NonLocal nr)
               -> UseVerifier  -- ^ Whether to use allocation verifier
               -> Label        -- ^ Label of graph entry block
               -> Graph nv C C -- ^ Program graph
-              -> Either [String] (Graph nr C C)
+              -> Either (String, [String]) (Graph nr C C)
 allocateHoopl regs offset slotSize useVerifier entry graph =
     newGraph <$> runIdentity (go (1 + IM.size (unsafeCoerce body)))
   where

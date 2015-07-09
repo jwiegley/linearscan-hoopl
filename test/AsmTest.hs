@@ -16,7 +16,9 @@ asmTestLiteral :: Int -> Program (Node IRVar) -> Maybe String -> Expectation
 asmTestLiteral regs program mexpected = do
     let (graph, entry) = runSimpleUniqueMonad $ compile "entry" program
     case allocateHoopl regs 0 8 VerifyEnabled entry graph of
-        Left err -> error $ "Allocation failed: " ++ intercalate "\n" err
+        Left (dump, err) ->
+            error $ "Allocation failed: " ++ intercalate "\n" err ++ "\n"
+                ++ dump
         Right graph' -> case mexpected of
             Nothing -> return ()
             Just expected ->

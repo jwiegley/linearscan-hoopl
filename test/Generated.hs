@@ -95,19 +95,20 @@ instance Show (Graph' Block (Node IRVar) C C) where
 generatedTests :: SpecWith ()
 generatedTests =
   it "Handles generated tests" $
-    (\a -> fuzzCheck' a 10000 (return ())) $ do
+    (\a -> fuzzCheck' a 100 (return ())) $ do
       (graph :: Graph (Node IRVar) C C) <- "create graph" ?> pure <$> rand
       let GMany _ body _ = graph
       let entry = unsafeCoerce
                     (head (IS.elems (unsafeCoerce
                                      (externalEntryLabels body))))
       case allocateHoopl 32 0 8 VerifyDisabled entry graph of
-          Left err
+          Left (dump, err)
               | any ("Cannot insert interval onto unhandled list"
                      `isInfixOf`) err ->
                   True `shouldBe` True
               | otherwise ->
-                  error $ "Allocation failed: " ++ intercalate "\n" err
+                  error $ "Allocation failed: " ++ intercalate "\n" err ++ "\n"
+                      ++ dump
           Right graph' -> do
               let g = showGraph show graph'
               _ <- evaluate (length g)
