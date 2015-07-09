@@ -11,7 +11,7 @@ import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Applicative
 import           Control.Arrow
 import           Control.Monad.Trans.Class
-import           Control.Monad.Trans.Tardis
+import           Control.Monad.Trans.State
 import           Data.Foldable
 import           Data.Functor.Identity
 import qualified Data.IntMap as IM
@@ -34,10 +34,10 @@ class HooplNode nv => NodeAlloc nv nr | nv -> nr, nr -> nv where
     getReferences :: nv e x -> [VarInfo]
     setRegisters  :: [(Int, PhysReg)] -> nv e x -> Env (nr e x)
 
-    mkMoveOps    :: PhysReg -> PhysReg -> Env [nr O O]
-    mkSwapOps    :: PhysReg -> PhysReg -> Env [nr O O]
-    mkSaveOps    :: PhysReg -> Maybe VarId -> Env [nr O O]
-    mkRestoreOps :: Maybe VarId -> PhysReg -> Env [nr O O]
+    mkMoveOps    :: PhysReg -> VarId -> PhysReg -> Env [nr O O]
+    mkSwapOps    :: PhysReg -> VarId -> PhysReg -> VarId -> Env [nr O O]
+    mkSaveOps    :: PhysReg -> VarId -> Env [nr O O]
+    mkRestoreOps :: VarId -> PhysReg -> Env [nr O O]
 
     op1ToString  :: nv e x -> String
 
@@ -57,8 +57,8 @@ blockInfo getBlockId = BlockInfo
     , splitCriticalEdge = \(BlockCC b m e)
                            (BlockCC next _ _) -> do
         let lab = entryLabel next
-        (next:supply, stack) <- getPast
-        sendFuture (supply, stack)
+        (next:supply, stack) <- get
+        put (supply, stack)
         let lab' = unsafeCoerce next
         return (BlockCC b m (retargetBranch e lab lab'),
                 BlockCC (mkLabelOp lab') BNil (mkJumpOp lab))
@@ -87,10 +87,10 @@ opInfo = OpInfo
            NodeOO n -> getReferences n
            NodeOC n -> getReferences n
 
-    , moveOp    = \x y -> fmap NodeOO <$> mkMoveOps x y
-    , swapOp    = \x y -> fmap NodeOO <$> mkSwapOps x y
-    , saveOp    = \x y -> fmap NodeOO <$> mkSaveOps x y
-    , restoreOp = \x y -> fmap NodeOO <$> mkRestoreOps x y
+    , moveOp    = \x xv y    -> fmap NodeOO <$> mkMoveOps x xv y
+    , swapOp    = \x xv y yv -> fmap NodeOO <$> mkSwapOps x xv y yv
+    , saveOp    = \x xv      -> fmap NodeOO <$> mkSaveOps x xv
+    , restoreOp = \yv y      -> fmap NodeOO <$> mkRestoreOps yv y
 
     , applyAllocs = \node m ->
         case node of
@@ -122,7 +122,7 @@ allocateHoopl regs offset slotSize useVerifier entry graph =
     blocks = postorder_dfs_from body entry
     GMany NothingO body NothingO = graph
 
-    go n = evalTardisT alloc (mempty, ([n..], newSpillStack offset slotSize))
+    go n = evalStateT alloc ([n..], newSpillStack offset slotSize)
       where
         alloc = allocate regs (blockInfo getBlockId) opInfo useVerifier blocks
           where

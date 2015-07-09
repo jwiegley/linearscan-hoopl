@@ -87,10 +87,8 @@ instance (Show v, VarReg v) => Show (Node v e x) where
     show (LoadConst _c v)  = "        lc " ++ show v -- ++ " " ++ show c
     show (Move x1 x2)      = "        move " ++ show x1 ++ " " ++ show x2
     show (Copy x1 x2)      = "        copy " ++ show x1 ++ " " ++ show x2
-    show (Save src dst)    = "        save " ++ show (varReg src) ++ " "
-                          ++ show dst
-    show (Restore src dst) = "        restore " ++ show src ++ " "
-                          ++ show (varReg dst)
+    show (Save src dst)    = "        save " ++ show src ++ " " ++ show dst
+    show (Restore src dst) = "        restore " ++ show src ++ " " ++ show dst
     show (Trace str)       = "        trace " ++ " " ++ show str
     show (Jump l)          = "        jump \"" ++ show l ++ "\""
     show (Branch _ v t f)  = "        branch " ++ show v
@@ -173,7 +171,7 @@ data Assign a b = Assign a b
 
 instance Show a => Show (Assign a PhysReg) where
     show (Assign v (-1)) = "<<v" ++ show v ++ ">>"
-    show (Assign v r)    = "r" ++ show r ++ "|v" ++ show v
+    show (Assign v r)    = "(r" ++ show r ++ " v" ++ show v ++ ")"
 
 class VarReg a where
     varReg :: a -> PhysReg
@@ -246,32 +244,28 @@ instance NodeAlloc (Node IRVar) (Node (Assign VarId PhysReg)) where
             , regRequired = True
             }
 
-    setRegisters m g = do
-        -- for_ m $ \(v, r) -> setAssignment r v
-        return $ over variables go g
+    setRegisters m g = return $ over variables go g
       where
         go :: IRVar -> Assign VarId PhysReg
         go (PhysicalIV r) = Assign (-1) r
         go (VirtualIV n)  = Assign n (fromMaybe (-1) (Data.List.lookup n m))
 
-    mkMoveOps src dst = do
-        -- vid <- getAssignment src
-        let vid = 0
-        return [Move (Assign vid src) (Assign vid dst)]
-    mkSwapOps src dst =
-        liftA2 (++) (mkRestoreOps Nothing dst)
-                    (mkSaveOps src Nothing)
+    mkMoveOps sreg svar dreg = do
+        return [Move (Assign svar sreg) (Assign svar dreg)]
 
-    mkSaveOps src dst = do
-        off <- getStackSlot dst
-        vid <- getAssignment src
-        -- let vid = 0
-        return [Save (Assign vid src) off]
-    mkRestoreOps src dst = do
-        off <- getStackSlot src
-        -- vid <- getAssignment dst
-        let vid = 0
-        return [Restore off (Assign vid dst)]
+    mkSwapOps sreg svar dreg dvar = do
+        save1 <- mkSaveOps svar sreg
+        save2 <- mkMoveOps dreg dvar sreg
+        rest  <- mkRestoreOps svar dreg
+        return $ save1 ++ save2 ++ rest
+
+    mkSaveOps sreg dvar = do
+        off <- getStackSlot (Just dvar)
+        return [Save (Assign dvar sreg) off]
+
+    mkRestoreOps svar dreg = do
+        off <- getStackSlot (Just svar)
+        return [Restore off (Assign svar dreg)]
 
     op1ToString = show
 

@@ -28,7 +28,6 @@ library
       base       >=4.7 && <5
     , hoopl      >= 3.10.0.1
     , linearscan >= 0.7.0.0
-    , tardis     >= 0.3.0.0
     , containers
     , transformers
     , free
@@ -57,7 +56,6 @@ test-suite test
     , linearscan-hoopl   >= 0.7.0.0
     , containers         >= 0.5.5
     , transformers       >= 0.3.0.0
-    , tardis             >= 0.3.0.0
     , lens-family-core
     , deepseq
     , QuickCheck

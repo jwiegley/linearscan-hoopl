@@ -13,7 +13,7 @@ import           Control.Monad
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import           Data.List (intercalate, isInfixOf)
-import           LinearScan (UseVerifier(VerifyEnabledUnitializedOK))
+import           LinearScan (UseVerifier(VerifyDisabled))
 import           LinearScan.Hoopl
 import           Test.FuzzCheck as F hiding (branch)
 import           Test.Hspec
@@ -101,7 +101,7 @@ generatedTests =
       let entry = unsafeCoerce
                     (head (IS.elems (unsafeCoerce
                                      (externalEntryLabels body))))
-      case allocateHoopl 32 0 8 VerifyEnabledUnitializedOK entry graph of
+      case allocateHoopl 32 0 8 VerifyDisabled entry graph of
           Left err
               | any ("Cannot insert interval onto unhandled list"
                      `isInfixOf`) err ->

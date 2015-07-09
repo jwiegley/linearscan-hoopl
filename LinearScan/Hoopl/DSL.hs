@@ -15,7 +15,6 @@ import           Control.Monad.Trans.Class
 import qualified Control.Monad.Trans.Free as TF
 import           Control.Monad.Trans.Free hiding (FreeF(..), Free)
 import           Control.Monad.Trans.State
-import           Control.Monad.Trans.Tardis
 import qualified Data.Map as M
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid
@@ -30,7 +29,7 @@ data SpillStack = SpillStack
     }
     deriving (Eq, Show)
 
-type Env = Tardis (M.Map PhysReg VarId) ([Int], SpillStack)
+type Env = State ([Int], SpillStack)
 
 newSpillStack :: Int -> Int -> SpillStack
 newSpillStack offset slotSize = SpillStack
@@ -41,24 +40,16 @@ newSpillStack offset slotSize = SpillStack
 
 getStackSlot :: Maybe VarId -> Env Int
 getStackSlot vid = do
-    (supply, stack) <- getPast
+    (supply, stack) <- get
     case M.lookup vid (stackSlots stack) of
         Just off -> return off
         Nothing -> do
             let off = stackPtr stack
-            sendFuture (supply, stack
+            put (supply, stack
                 { stackPtr   = off + stackSlotSize stack
                 , stackSlots = M.insert vid off (stackSlots stack)
                 })
             return off
-
-setAssignment :: PhysReg -> VarId -> Env ()
-setAssignment = (modifyBackwards .) . M.insert
-
-getAssignment :: PhysReg -> Env VarId
-getAssignment reg =
-    fromMaybe (error $ "No assignment for register r" ++ show reg)
-        . M.lookup reg <$> getFuture
 
 -- | The 'Asm' monad lets us create labels by name and refer to them later.
 type Labels = M.Map String Label

@@ -104,23 +104,23 @@ sanityTests = do
         lc (r3 v4)
         lc (r4 v6)
         lc (r5 v7)
-        save (r5 v0) 0
+        save (r5 v7) 0
         lc (r5 v9)
-        save (r5 v0) 8
+        save (r5 v9) 8
         lc (r5 v10)
-        save (r5 v0) 16
+        save (r5 v10) 16
         lc (r5 v12)
-        save (r5 v0) 24
+        save (r5 v12) 24
         lc (r5 v13)
         add (r0 v0) (r1 v1) (r0 v2)
         add (r2 v3) (r3 v4) (r1 v5)
-        restore 0 (r3 v0)
+        restore 0 (r3 v7)
         add (r4 v6) (r3 v7) (r2 v8)
-        save (r0 v0) 32
-        restore 8 (r4 v0)
-        restore 16 (r0 v0)
+        save (r0 v2) 32
+        restore 8 (r4 v9)
+        restore 16 (r0 v10)
         add (r4 v9) (r0 v10) (r3 v11)
-        restore 24 (r4 v0)
+        restore 24 (r4 v12)
         add (r4 v12) (r5 v13) (r0 v14)
         return_
 
@@ -421,13 +421,13 @@ spillTests = do
         add (r10 v15) (r11 v16) (r29 v17)
         add (r12 v18) (r13 v19) (r30 v20)
         add (r14 v21) (r15 v22) (r31 v23)
-        save (r31 v0) 0         -- jww (2015-05-26): These saves are unnecessary
+        save (r31 v23) 0      -- jww (2015-05-26): These saves are unnecessary
         add (r16 v24) (r17 v25) (r31 v26)
-        save (r31 v0) 8
+        save (r31 v26) 8
         add (r18 v27) (r19 v28) (r31 v29)
-        save (r31 v0) 16
+        save (r31 v29) 16
         add (r20 v30) (r21 v31) (r31 v32)
-        save (r31 v0) 24
+        save (r31 v32) 24
         add (r22 v33) (r23 v34) (r31 v35)
         add (r0 v0) (r1 v1) (r24 v2)
         add (r2 v3) (r3 v4) (r25 v5)
@@ -436,13 +436,13 @@ spillTests = do
         add (r8 v12) (r9 v13) (r28 v14)
         add (r10 v15) (r11 v16) (r29 v17)
         add (r12 v18) (r13 v19) (r30 v20)
-        restore 0 (r0 v0)
+        restore 0 (r0 v23)
         add (r14 v21) (r15 v22) (r0 v23)
-        restore 8 (r1 v31)
+        restore 8 (r1 v26)
         add (r16 v24) (r17 v25) (r1 v26)
-        restore 16 (r2 v0)
+        restore 16 (r2 v29)
         add (r18 v27) (r19 v28) (r2 v29)
-        restore 24 (r3 v0)
+        restore 24 (r3 v32)
         add (r20 v30) (r21 v31) (r3 v32)
         add (r22 v33) (r23 v34) (r31 v35)
         return_
@@ -533,7 +533,7 @@ spillTests = do
         -- v30), we must spill a register because there are not 32 registers.
         -- So we pick the first register, counting from 0, whose next use
         -- position is the furthest from this position.
-        save (r31 v0) 0
+        save (r31 v29) 0
 
         add (r20 v30) (r21 v31) (r31 v32)
 
@@ -549,7 +549,7 @@ spillTests = do
 
         -- When it comes time to reload v29, we pick the first available
         -- register.
-        restore 0 (r0 v0)
+        restore 0 (r0 v29)
 
         add (r18 v27) (r0 v29) (r19 v28)
         add (r20 v30) (r31 v32) (r21 v31)
@@ -607,13 +607,13 @@ spillTests = do
         lc (r1 v1)
         add (r0 v0) (r1 v1) (r2 v2)
         add (r2 v2) (r1 v1) (r3 v3)
-        save (r1 v0) 0
+        save (r1 v1) 0
         add (r3 v3) (r2 v2) (r1 v4)
         add (r1 v4) (r3 v3) (r0 v5)
         add (r2 v2) (r3 v3) (r2 v6)
         add (r1 v4) (r0 v5) (r0 v7)
         add (r2 v6) (r0 v7) (r0 v8)
-        restore 0 (r1 v0)
+        restore 0 (r1 v1)
         add (r0 v8) (r1 v1) (r0 v0)
         return_
 
@@ -698,7 +698,7 @@ blockTests = do
            jump "B4"
 
        label "B3" $ do
-           move (r2 v0) (r0 v0)
+           move (r2 v2) (r0 v2)
            add (r1 v1) (r0 v2) (r2 v3)
            jump "B4"
 
@@ -807,8 +807,8 @@ blockTests = do
            move (r0 v5) (r1 v4)
            save (r3 v21) 32
            lc (r3 v19)
-           save (r2 v18) 48
-           save (r3 v19) 40
+           save (r3 v19) 48
+           save (r2 v18) 40
            restore 0 (r2 v20)
            move (r2 v20) (r3 v17)
            save (r2 v20) 0
@@ -844,26 +844,26 @@ callTests = do
         return_) $
 
     label "entry" $ do
-        lc (r0 v0)
-        lc (r3 v1)
-        add (r0 v0) (r3 v1) (r2 v2)
-        add (r2 v2) (r3 v1) (r1 v3)
-        save (r3 v1) 0
-        add (r1 v3) (r2 v2) (r3 v4)
-        save (r2 v2) 8
-        add (r3 v4) (r1 v3) (r2 v5)
-        save (r1 v3) 32
-        save (r3 v4) 24
-        save (r2 v5) 16
+        lc (r3 v0)
+        lc (r2 v1)
+        add (r3 v0) (r2 v1) (r3 v2)
+        add (r3 v2) (r2 v1) (r1 v3)
+        add (r1 v3) (r3 v2) (r0 v4)
+        save (r3 v2) 0
+        add (r0 v4) (r1 v3) (r3 v5)
+        save (r2 v1) 32
+        save (r1 v3) 24
+        save (r0 v4) 16
+        save (r3 v5) 8
         call 1000
-        restore 8 (r2 v2)
-        restore 32 (r3 v3)
-        add (r2 v2) (r3 v3) (r1 v6)
-        restore 24 (r3 v4)
-        restore 16 (r0 v5)
-        add (r3 v4) (r0 v5) (r2 v7)
-        add (r1 v6) (r2 v7) (r0 v8)
-        restore 0 (r1 v1)
+        restore 0 (r1 v2)
+        restore 24 (r2 v3)
+        add (r1 v2) (r2 v3) (r0 v6)
+        restore 16 (r2 v4)
+        restore 8 (r3 v5)
+        add (r2 v4) (r3 v5) (r1 v7)
+        add (r0 v6) (r1 v7) (r0 v8)
+        restore 32 (r1 v1)
         add (r0 v8) (r1 v1) (r0 v0)
         return_
 
@@ -908,20 +908,20 @@ loopTests = do
 \        jump \"L2\"\n\
 \    label \"L2\" $ do\n\
 \        trace  \"B1\"\n\
-\        lc r0|v1\n\
-\        branch r0|v1 \"L3\" \"L4\"\n\
+\        lc (r0 v1)\n\
+\        branch (r0 v1) \"L3\" \"L4\"\n\
 \    label \"L3\" $ do\n\
 \        trace  \"B3\"\n\
 \        jump \"L2\"\n\
 \    label \"L4\" $ do\n\
 \        trace  \"B2\"\n\
-\        branch r0|v1 \"L5\" \"L9\"\n\
+\        branch (r0 v1) \"L5\" \"L9\"\n\
 \    label \"L5\" $ do\n\
 \        trace  \"B5\"\n\
 \        return_\n\
 \    label \"L6\" $ do\n\
 \        trace  \"B4\"\n\
-\        branch r0|v1 \"L7\" \"L8\"\n\
+\        branch (r0 v1) \"L7\" \"L8\"\n\
 \    label \"L7\" $ do\n\
 \        trace  \"B7\"\n\
 \        jump \"L2\"\n\
