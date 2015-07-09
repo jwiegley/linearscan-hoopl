@@ -617,6 +617,133 @@ spillTests = do
         add (r0 v8) (r1 v1) (r0 v0)
         return_
 
+  it "Allocates between call instructions" $ asmTest 32
+    (do label "entry" $ do
+            lc v2
+            lc v3
+            lc v12
+            lc v16
+            lc v17
+            lc v35
+            lc v42
+            lc v45
+            lc v51
+            lc v53
+            lc v90
+            lc v100
+            call 97
+            add v51 v45 v98
+            copy v12 v64
+            branch v42 "L92" "L62"
+
+        label "L62" $ do
+            lc v50
+            jump "L12"
+
+        label "L12" $ do
+            nop
+            move v100 v44
+            call 30
+            call 32
+            jump "L15"
+
+        label "L15" $ do
+            lc v3
+            call 35
+            lc v73
+            return_
+
+        label "L92" $ do
+            lc v95
+            move v90 v43
+            call 95
+            call 64
+            copy v53 v58
+            add v98 v16 v100
+            add v35 v3 v67
+            copy v2 v24
+            lc v13
+            move v17 v32
+            return_) $ do
+
+    label "entry" $ do
+        lc (r31 v2)
+        lc (r30 v3)
+        lc (r29 v12)
+        lc (r28 v16)
+        lc (r27 v17)
+        lc (r26 v35)
+        lc (r25 v42)
+        lc (r24 v45)
+        lc (r23 v51)
+        lc (r22 v53)
+        lc (r21 v90)
+        lc (r20 v100)
+        save (r31 v2) 88
+        save (r30 v3) 80
+        save (r29 v12) 72
+        save (r28 v16) 64
+        save (r27 v17) 56
+        save (r26 v35) 48
+        save (r25 v42) 40
+        save (r24 v45) 32
+        save (r23 v51) 24
+        save (r22 v53) 16
+        save (r21 v90) 8
+        save (r20 v100) 0
+        call 97
+        restore 32 (r30 v45)
+        restore 24 (r29 v51)
+        add (r29 v51) (r30 v45) (r31 v98)
+        save (r31 v98) 96
+        restore 72 (r30 v12)
+        move (r30 v12) (r31 v64)
+        save (r31 v64) 104
+        restore 40 (r31 v42)
+        branch (r31 v42) "L92" "L62"
+
+    label "L62" $ do
+        lc (r31 v50)
+        jump "L12"
+
+    label "L12" $ do
+        nop
+        restore 0 (r30 v100)
+        move (r30 v100) (r31 v44)
+        call 30
+        call 32
+        jump "L15"
+
+    label "L15" $ do
+        lc (r31 v3)
+        call 35
+        save (r31 v3) 80
+        lc (r31 v73)
+        return_
+
+    label "L92" $ do
+        lc (r31 v95)
+        save (r31 v95) 112
+        restore 8 (r30 v90)
+        move (r30 v90) (r31 v43)
+        call 95
+        save (r31 v43) 120
+        call 64
+        restore 16 (r1 v53)
+        move (r1 v53) (r0 v58)
+        restore 64 (r1 v16)
+        restore 96 (r2 v98)
+        add (r2 v98) (r1 v16) (r1 v100)
+        restore 80 (r4 v3)
+        restore 48 (r3 v35)
+        add (r3 v35) (r4 v3) (r2 v67)
+        restore 88 (r4 v2)
+        move (r4 v2) (r3 v24)
+        lc (r4 v13)
+        restore 56 (r6 v17)
+        move (r6 v17) (r5 v32)
+        return_
+
 blockTests :: SpecWith ()
 blockTests = do
   it "Allocates across blocks" $ asmTest 32
