@@ -12,10 +12,11 @@ import LinearScan.Hoopl.DSL
 import Normal ()
 import Test.Hspec
 
-asmTestLiteral :: Int -> Program (Node IRVar) -> Maybe String -> Expectation
-asmTestLiteral regs program mexpected = do
+asmTestLiteral :: UseVerifier -> Int -> Program (Node IRVar) -> Maybe String
+               -> Expectation
+asmTestLiteral verif regs program mexpected = do
     let (graph, entry) = runSimpleUniqueMonad $ compile "entry" program
-    case allocateHoopl regs 0 8 VerifyEnabled entry graph of
+    case allocateHoopl regs 0 8 verif entry graph of
         Left (dump, err) ->
             error $ "Allocation failed: " ++ intercalate "\n" err ++ "\n"
                 ++ dump
@@ -35,7 +36,7 @@ asmTest :: Int
         -> Program (Node (Assign VarId PhysReg))
         -> Expectation
 asmTest regs program
-    = asmTestLiteral regs program
+    = asmTestLiteral VerifyEnabledStrict regs program
     . Just
     . showGraph show
     . fst
@@ -43,4 +44,4 @@ asmTest regs program
     . compile "entry"
 
 asmTest_ :: Int -> Program (Node IRVar) -> Expectation
-asmTest_ regs program = asmTestLiteral regs program Nothing
+asmTest_ regs program = asmTestLiteral VerifyEnabledStrict regs program Nothing

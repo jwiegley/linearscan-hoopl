@@ -13,7 +13,7 @@ import           Control.Monad
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import           Data.List (intercalate, isInfixOf)
-import           LinearScan (UseVerifier(VerifyDisabled))
+import           LinearScan (UseVerifier(..))
 import           LinearScan.Hoopl
 import           Test.FuzzCheck as F hiding (branch)
 import           Test.Hspec

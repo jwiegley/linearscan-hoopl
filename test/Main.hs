@@ -6,9 +6,11 @@ module Main where
 import AsmTest
 import Assembly
 import Generated
+import LinearScan (UseVerifier(..))
 import LinearScan.Hoopl.DSL
 -- import Programs.Blocked
 import Programs.Exhaustion
+-- import Programs.Ordered
 import Test.Hspec
 
 -- | The objective of these tests is to present a program to the register
@@ -26,6 +28,8 @@ main = hspec $ do
   describe "Program tests" $ do
     it "Near exhaustion program" $ asmTest_ 32 exhaustion1
     -- it "Blocked register program" $ asmTest_ 32 regBlocked
+    -- it "Orders reservations" $
+    --     asmTestLiteral VerifyEnabled 32 regOrdered Nothing
 
   describe "Generated tests" generatedTests
 
@@ -996,7 +1000,7 @@ callTests = do
 
 loopTests :: SpecWith ()
 loopTests = do
-  it "Correctly orders loop blocks" $ asmTestLiteral 4
+  it "Correctly orders loop blocks" $ asmTestLiteral VerifyEnabledStrict 4
     (do label "entry" $ do
             trace "B0"
             jump "B1"
