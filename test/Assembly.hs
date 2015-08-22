@@ -14,7 +14,7 @@ import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Applicative
 import           Data.Foldable as F
 import qualified Data.List
-import           Data.Maybe (fromMaybe, maybeToList)
+import           Data.Maybe (fromMaybe)
 import           Data.Monoid
 import           Data.Traversable
 import           Lens.Family hiding (Constant)
@@ -80,6 +80,8 @@ deriving instance Eq v => Eq (Node v e x)
 
 instance (Show v, VarReg v) => Show (Node v e x) where
     show (Label l)         = "    label \"" ++ show l ++ "\" $ do"
+    show (Alloc (Just x1) x2) =
+        "        alloc (Just " ++ show x1 ++ ") " ++ show x2
     show (Alloc x1 x2)     = "        alloc " ++ show x1 ++ " " ++ show x2
     show (Reclaim v)       = "        reclaim " ++ show v
     show (Instr i)         = "        " ++ show i
@@ -210,7 +212,7 @@ instance NodeAlloc (Node IRVar) (Node (Assign VarId PhysReg)) where
       where
         go :: Node IRVar e x -> [VarInfo]
         go (Label _)         = mempty
-        go (Alloc msrc dst)  = F.concatMap (mkv Input) (maybeToList msrc) <>
+        go (Alloc msrc dst)  = maybe mempty (mkv Input) msrc <>
                                mkv Output dst <>
                                [ vinfo Output (Left n) | n <- [2..16] ]
         go (Reclaim src)     = mkv Input src

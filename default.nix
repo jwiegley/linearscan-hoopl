@@ -1,6 +1,6 @@
 { mkDerivation, base, containers, deepseq, free, hoopl, hspec
 , hspec-expectations, lens-family-core, linearscan, stdenv
-, transformers, tardis, QuickCheck, fuzzcheck
+, transformers, tardis, QuickCheck
 }:
 mkDerivation {
   pname = "linearscan-hoopl";
@@ -13,7 +13,6 @@ mkDerivation {
   testDepends = [
     base containers deepseq hoopl hspec hspec-expectations
     lens-family-core linearscan transformers tardis QuickCheck
-    fuzzcheck
   ];
   homepage = "http://github.com/jwiegley/linearscan-hoopl";
   description = "Makes it easy to use the linearscan register allocator with Hoopl";
