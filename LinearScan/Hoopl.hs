@@ -35,7 +35,6 @@ class HooplNode nv => NodeAlloc nv nr | nv -> nr, nr -> nv where
     setRegisters  :: [(Int, PhysReg)] -> nv e x -> Env (nr e x)
 
     mkMoveOps    :: PhysReg -> VarId -> PhysReg -> Env [nr O O]
-    mkSwapOps    :: PhysReg -> VarId -> PhysReg -> VarId -> Env [nr O O]
     mkSaveOps    :: PhysReg -> VarId -> Env [nr O O]
     mkRestoreOps :: VarId -> PhysReg -> Env [nr O O]
 
@@ -88,7 +87,6 @@ opInfo = OpInfo
            NodeOC n -> getReferences n
 
     , moveOp    = \x xv y    -> fmap NodeOO <$> mkMoveOps x xv y
-    , swapOp    = \x xv y yv -> fmap NodeOO <$> mkSwapOps x xv y yv
     , saveOp    = \x xv      -> fmap NodeOO <$> mkSaveOps x xv
     , restoreOp = \yv y      -> fmap NodeOO <$> mkRestoreOps yv y
 

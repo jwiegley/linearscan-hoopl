@@ -17,6 +17,8 @@ import Programs.Residency
 import Programs.BranchAlloc
 import Programs.Returned
 import Programs.Restoration
+import Programs.Allocation
+import Programs.UponEntry
 import Test.Hspec
 
 -- | The objective of these tests is to present a program to the register
@@ -31,24 +33,19 @@ main = hspec $ do
   describe "Call tests" callTests
   describe "Loop tests" loopTests
 
-  describe "Program tests" $ do
+  describe "Edge-case tests" $ do
+    let runTest k = asmTestLiteral VerifyEnabled 32 k Nothing
     it "Near exhaustion program" $ asmTest_ 32 exhaustion1
-    -- it "Blocked register program" $
-    --     asmTestLiteral VerifyEnabled 32 regBlocked Nothing
-    it "Orders reservations" $
-        asmTestLiteral VerifyEnabled 32 regOrdered Nothing
-    it "Guards against over-committing" $
-        asmTestLiteral VerifyEnabled 32 overCommitted Nothing
-    it "Properly reserves incoming registers" $
-        asmTestLiteral VerifyEnabled 32 regsIncoming Nothing
-    it "Handles a complex residency scenario" $
-        asmTestLiteral VerifyEnabled 32 residencyTest Nothing
-    it "A case of residency involving branches" $
-        asmTestLiteral VerifyEnabled 32 branchAlloc Nothing
-    it "Frees registers properly before returning" $
-        asmTestLiteral VerifyEnabled 32 freeBeforeReturn Nothing
-    it "Restoration after a resolution graph edge split" $
-        asmTestLiteral VerifyEnabled 32 restoration Nothing
+    -- it "Blocked register program"                  $ runTest regBlocked
+    it "Orders reservations"                       $ runTest regOrdered
+    it "Guards against over-committing"            $ runTest overCommitted
+    it "Properly reserves incoming registers"      $ runTest regsIncoming
+    it "Handles a complex residency scenario"      $ runTest residencyTest
+    it "A case of residency involving branches"    $ runTest branchAlloc
+    it "Frees registers properly before returning" $ runTest freeBeforeReturn
+    it "Restoration after a graph edge split"      $ runTest restoration
+    it "Handles edge-case allocation scenario"     $ runTest allocation
+    it "Allocates correctly on block entry"        $ runTest uponEntry
 
   describe "Generated tests" generatedTests
 

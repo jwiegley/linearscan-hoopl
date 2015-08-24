@@ -255,12 +255,6 @@ instance NodeAlloc (Node IRVar) (Node (Assign VarId PhysReg)) where
     mkMoveOps sreg svar dreg = do
         return [Move (Assign svar sreg) (Assign svar dreg)]
 
-    mkSwapOps sreg svar dreg dvar = do
-        save1 <- mkSaveOps svar sreg
-        save2 <- mkMoveOps dreg dvar sreg
-        rest  <- mkRestoreOps svar dreg
-        return $ save1 ++ save2 ++ rest
-
     mkSaveOps sreg dvar = do
         off <- getStackSlot (Just dvar)
         return [Save (Assign dvar sreg) off]
