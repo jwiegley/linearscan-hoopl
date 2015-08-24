@@ -19,6 +19,7 @@ import Programs.Returned
 import Programs.Restoration
 import Programs.Allocation
 import Programs.UponEntry
+import Programs.Overlapped
 import Test.Hspec
 
 -- | The objective of these tests is to present a program to the register
@@ -46,6 +47,7 @@ main = hspec $ do
     it "Restoration after a graph edge split"      $ runTest restoration
     it "Handles edge-case allocation scenario"     $ runTest allocation
     it "Allocates correctly on block entry"        $ runTest uponEntry
+    it "Register over-allocation edge-case"        $ runTest overlapped
 
   describe "Generated tests" generatedTests
 
@@ -819,23 +821,23 @@ blockTests = do
            move (r0 v5) (r1 v4)
            save (r3 v21) 32
            lc (r3 v19)
-           save (r3 v19) 48
            save (r2 v18) 40
+           save (r3 v19) 48
            restore 0 (r3 v20)
            move (r3 v20) (r2 v17)
-           restore 24 (r2 v15)
            save (r3 v20) 0
+           restore 24 (r2 v15)
            jump "L6"
 
        label "L6" $
            branch (r1 v4) "L5" "L2"
 
        label "L5" $ do
-           save (r2 v15) 24
            restore 0 (r3 v20)   -- jww (2015-05-26): should be unnecessary
+           save (r2 v15) 24
            save (r3 v20) 0
-           restore 8 (r0 v3)
            restore 24 (r2 v15)
+           restore 8 (r0 v3)
            jump "L3"
 
 callTests :: SpecWith ()
@@ -864,9 +866,9 @@ callTests = do
         add (r1 v3) (r2 v2) (r3 v4)
         save (r2 v2) 8
         add (r3 v4) (r1 v3) (r2 v5)
-        save (r2 v5) 32
-        save (r3 v4) 24
         save (r1 v3) 16
+        save (r3 v4) 24
+        save (r2 v5) 32
         call 1000
         restore 16 (r2 v3)
         restore 8 (r1 v2)
@@ -941,21 +943,21 @@ callTests = do
         lc (r22 v53)
         lc (r21 v90)
         lc (r20 v100)
-        save (r20 v100) 88
-        save (r21 v90) 80
-        save (r22 v53) 72
-        save (r23 v51) 64
-        save (r24 v45) 56
-        save (r25 v42) 48
-        save (r26 v35) 40
-        save (r27 v17) 32
-        save (r28 v16) 24
-        save (r29 v12) 16
-        save (r30 v3) 8
         save (r31 v2) 0
+        save (r30 v3) 8
+        save (r29 v12) 16
+        save (r28 v16) 24
+        save (r27 v17) 32
+        save (r26 v35) 40
+        save (r25 v42) 48
+        save (r24 v45) 56
+        save (r23 v51) 64
+        save (r22 v53) 72
+        save (r21 v90) 80
+        save (r20 v100) 88
         call 97
-        restore 64 (r1 v51)
         restore 56 (r0 v45)
+        restore 64 (r1 v51)
         add (r1 v51) (r0 v45) (r31 v98)
         restore 16 (r0 v12)
         move (r0 v12) (r0 v64)
@@ -966,18 +968,18 @@ callTests = do
         lc (r30 v95)
         restore 80 (r1 v90)
         move (r1 v90) (r29 v43)
-        save (r31 v98) 120
-        save (r30 v95) 112
         save (r29 v43) 104
+        save (r30 v95) 112
+        save (r31 v98) 120
         call 95
         call 64
         restore 72 (r1 v53)
         move (r1 v53) (r1 v58)
-        restore 120 (r3 v98)
         restore 24 (r2 v16)
+        restore 120 (r3 v98)
         add (r3 v98) (r2 v16) (r0 v100)
-        restore 40 (r2 v35)
         restore 8 (r3 v3)
+        restore 40 (r2 v35)
         add (r2 v35) (r3 v3) (r2 v67)
         restore 0 (r3 v2)
         move (r3 v2) (r3 v24)

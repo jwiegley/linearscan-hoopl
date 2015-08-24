@@ -94,7 +94,7 @@ instance Show (Graph' Block (Node IRVar) C C) where
 
 generatedTests :: SpecWith ()
 generatedTests = it "Handles generated tests" $ do
-  res <- quickCheckWithResult stdArgs { maxSuccess = 500 } $
+  res <- quickCheckWithResult stdArgs { maxSuccess = 10000 } $
       forAll arbitrary testGraph
   isSuccess res `shouldBe` True
 
