@@ -3,8 +3,8 @@ module Programs.Residency where
 import Assembly
 import LinearScan.Hoopl.DSL
 
-residencyTest :: Program (Node IRVar)
-residencyTest = do
+residency :: Program (Node IRVar)
+residency = do
     label "entry" $ do
         branch v99 "L25" "L74"
 

@@ -14,12 +14,12 @@ import Programs.Ordered
 import Programs.Overcommit
 import Programs.Incoming
 import Programs.Residency
+import Programs.Residency2
 import Programs.BranchAlloc
 import Programs.Returned
 import Programs.Restoration
 import Programs.Allocation
 import Programs.Allocation2
-import Programs.Allocation3
 import Programs.UponEntry
 import Programs.Overlapped
 import Programs.ReturnAssign
@@ -44,13 +44,13 @@ main = hspec $ do
     it "Orders reservations"                       $ runTest regOrdered
     it "Guards against over-committing"            $ runTest overCommitted
     it "Properly reserves incoming registers"      $ runTest regsIncoming
-    it "Handles a complex residency scenario"      $ runTest residencyTest
+    it "Handles edge-case 1 residency scenario"    $ runTest residency
+    it "Handles edge-case 2 residency scenario"    $ runTest residency2
     it "A case of residency involving branches"    $ runTest branchAlloc
     it "Frees registers properly before returning" $ runTest freeBeforeReturn
     it "Restoration after a graph edge split"      $ runTest restoration
     it "Handles edge-case 1 allocation scenario"   $ runTest allocation
     it "Handles edge-case 2 allocation scenario"   $ runTest allocation2
-    it "Handles edge-case 3 allocation scenario"   $ runTest allocation3
     it "Allocates correctly on block entry"        $ runTest uponEntry
     it "Register over-allocation edge-case"        $ runTest overlapped
     it "Does not assign after a return_"             $ runTest returnAssign
