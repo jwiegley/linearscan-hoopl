@@ -18,8 +18,11 @@ import Programs.BranchAlloc
 import Programs.Returned
 import Programs.Restoration
 import Programs.Allocation
+import Programs.Allocation2
+import Programs.Allocation3
 import Programs.UponEntry
 import Programs.Overlapped
+import Programs.ReturnAssign
 import Test.Hspec
 
 -- | The objective of these tests is to present a program to the register
@@ -45,9 +48,12 @@ main = hspec $ do
     it "A case of residency involving branches"    $ runTest branchAlloc
     it "Frees registers properly before returning" $ runTest freeBeforeReturn
     it "Restoration after a graph edge split"      $ runTest restoration
-    it "Handles edge-case allocation scenario"     $ runTest allocation
+    it "Handles edge-case 1 allocation scenario"   $ runTest allocation
+    it "Handles edge-case 2 allocation scenario"   $ runTest allocation2
+    it "Handles edge-case 3 allocation scenario"   $ runTest allocation3
     it "Allocates correctly on block entry"        $ runTest uponEntry
     it "Register over-allocation edge-case"        $ runTest overlapped
+    it "Does not assign after a return_"             $ runTest returnAssign
 
   describe "Generated tests" generatedTests
 
@@ -932,29 +938,29 @@ callTests = do
 
     label "entry" $ do
         lc (r31 v2)
-        lc (r30 v3)
-        lc (r29 v12)
-        lc (r28 v16)
-        lc (r27 v17)
-        lc (r26 v35)
-        lc (r25 v42)
-        lc (r24 v45)
-        lc (r23 v51)
-        lc (r22 v53)
-        lc (r21 v90)
-        lc (r20 v100)
         save (r31 v2) 0
-        save (r30 v3) 8
-        save (r29 v12) 16
-        save (r28 v16) 24
-        save (r27 v17) 32
-        save (r26 v35) 40
-        save (r25 v42) 48
-        save (r24 v45) 56
-        save (r23 v51) 64
-        save (r22 v53) 72
-        save (r21 v90) 80
-        save (r20 v100) 88
+        lc (r31 v3)
+        save (r31 v3) 8
+        lc (r31 v12)
+        save (r31 v12) 16
+        lc (r31 v16)
+        save (r31 v16) 24
+        lc (r31 v17)
+        save (r31 v17) 32
+        lc (r31 v35)
+        save (r31 v35) 40
+        lc (r31 v42)
+        save (r31 v42) 48
+        lc (r31 v45)
+        save (r31 v45) 56
+        lc (r31 v51)
+        save (r31 v51) 64
+        lc (r31 v53)
+        save (r31 v53) 72
+        lc (r31 v90)
+        save (r31 v90) 80
+        lc (r31 v100)
+        save (r31 v100) 88
         call 97
         restore 56 (r0 v45)
         restore 64 (r1 v51)
@@ -965,18 +971,18 @@ callTests = do
         branch (r1 v42) "L2" "L3"
 
     label "L2" $ do
-        lc (r30 v95)
+        save (r31 v98) 104
+        lc (r31 v95)
         restore 80 (r1 v90)
-        move (r1 v90) (r29 v43)
-        save (r29 v43) 104
-        save (r30 v95) 112
-        save (r31 v98) 120
+        save (r31 v95) 112
+        move (r1 v90) (r31 v43)
+        save (r31 v43) 120
         call 95
         call 64
         restore 72 (r1 v53)
         move (r1 v53) (r1 v58)
         restore 24 (r2 v16)
-        restore 120 (r3 v98)
+        restore 104 (r3 v98)
         add (r3 v98) (r2 v16) (r0 v100)
         restore 8 (r3 v3)
         restore 40 (r2 v35)
@@ -995,15 +1001,15 @@ callTests = do
     label "L4" $ do
         nop
         restore 88 (r0 v100)
-        move (r0 v100) (r30 v44)
-        save (r30 v44) 96
+        move (r0 v100) (r31 v44)
+        save (r31 v44) 96
         call 30
         call 32
         jump "L5"
 
     label "L5" $ do
-        lc (r30 v3)
-        save (r30 v3) 8
+        lc (r31 v3)
+        save (r31 v3) 8
         call 35
         lc (r1 v73)
         return_
