@@ -21,6 +21,8 @@ import Programs.Restoration
 import Programs.Allocation
 import Programs.Allocation2
 import Programs.Allocation3
+import Programs.Allocation4
+import Programs.Allocation5
 import Programs.UponEntry
 import Programs.Overlapped
 import Programs.ReturnAssign
@@ -53,6 +55,8 @@ main = hspec $ do
     it "Handles edge-case 1 allocation scenario"   $ runTest allocation
     it "Handles edge-case 2 allocation scenario"   $ runTest allocation2
     it "Handles edge-case 3 allocation scenario"   $ runTest allocation3
+    it "Handles edge-case 4 allocation scenario"   $ runTest allocation4
+    it "Handles edge-case 5 allocation scenario"   $ runTest allocation5
     it "Allocates correctly on block entry"        $ runTest uponEntry
     it "Register over-allocation edge-case"        $ runTest overlapped
     it "Does not assign after a return_"             $ runTest returnAssign
