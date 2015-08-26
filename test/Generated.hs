@@ -13,7 +13,7 @@ import           Control.Monad
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import           Data.List (intercalate, isInfixOf)
-import           LinearScan (UseVerifier(..))
+import           LinearScan
 import           LinearScan.Hoopl
 import           Test.Hspec
 import           Test.QuickCheck hiding (label)
@@ -36,12 +36,12 @@ instance Arbitrary (Instruction IRVar) where
 
 instance Arbitrary (Node IRVar O C) where
     arbitrary = sized $ \n -> frequency
-        [ (1, Jump <$> unsafeCoerce <$> (choose (0,n) :: Gen Int))
+        [ (1, Jump <$> unsafeCoerce <$> (choose (1,n) :: Gen Int))
         , (1, Branch <$> pure Zero
                      <*> arbitrary
-                     <*> (unsafeCoerce <$> (choose (0,n) :: Gen Int))
-                     <*> (unsafeCoerce <$> (choose (0,n) :: Gen Int)))
-        , (1, ReturnInstr [] <$> arbitrary)
+                     <*> (unsafeCoerce <$> (choose (1,n) :: Gen Int))
+                     <*> (unsafeCoerce <$> (choose (1,n) :: Gen Int)))
+        , (1, pure $ ReturnInstr [] Nop)
         ]
 
 instance Arbitrary (Node IRVar O O) where
@@ -92,9 +92,12 @@ instance Arbitrary (Graph' Block (Node IRVar) C C) where
 instance Show (Graph' Block (Node IRVar) C C) where
     show = showGraph show
 
+instance Show (Graph' Block (Node (Assign VarId PhysReg)) C C) where
+    show = showGraph show
+
 generatedTests :: SpecWith ()
 generatedTests = it "Handles generated tests" $ do
-  res <- quickCheckWithResult stdArgs { maxSuccess = 1000 } $
+  res <- quickCheckWithResult stdArgs { maxSuccess = 1000000000 } $
       forAll arbitrary testGraph
   isSuccess res `shouldBe` True
 
@@ -104,14 +107,13 @@ testGraph graph@(GMany _ body _) =
         [] -> True `shouldBe` True
         (entry:_) -> case allocateHoopl 32 0 8 VerifyEnabled
                                        (unsafeCoerce entry) graph of
-            Left (dump, err)
-                | any ("Cannot insert onto unhandled:" `isInfixOf`) err ->
+            (dump, Left errs)
+                | any ("Cannot insert onto unhandled:" `isInfixOf`) errs ->
                     True `shouldBe` True
                 | otherwise ->
                     error $ "Allocation failed: "
-                         ++ intercalate "\n" err ++ "\n" ++ dump
-            Right graph' -> do
-                let g = showGraph show graph'
-                _ <- evaluate (length g)
+                         ++ intercalate "\n" errs ++ "\n" ++ dump
+            (dump, Right graph') -> do
+                -- Make sure everything about the graph is computed
+                _ <- evaluate $ length (show graph') + length dump
                 return ()
-                -- putStrLn $ "---- Compiled  ----\n" ++ g

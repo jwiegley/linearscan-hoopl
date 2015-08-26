@@ -17,10 +17,10 @@ asmTestLiteral :: UseVerifier -> Int -> Program (Node IRVar) -> Maybe String
 asmTestLiteral verif regs program mexpected = do
     let (graph, entry) = runSimpleUniqueMonad $ compile "entry" program
     case allocateHoopl regs 0 8 verif entry graph of
-        Left (dump, err) ->
-            error $ "Allocation failed: " ++ intercalate "\n" err ++ "\n"
+        (dump, Left errs) ->
+            error $ "Allocation failed: " ++ intercalate "\n" errs ++ "\n"
                 ++ dump
-        Right graph' -> case mexpected of
+        (dump, Right graph') -> case mexpected of
             Nothing -> return ()
             Just expected ->
                 let g = showGraph show graph' in
@@ -29,6 +29,7 @@ asmTestLiteral verif regs program mexpected = do
                     putStrLn $ "---- Expecting ----\n" ++ expected
                     putStrLn $ "---- Compiled  ----\n" ++ g
                     putStrLn "-------------------"
+                    putStrLn $ "Allocation result:\n" ++ dump
                     throwIO (e :: SomeException)
 
 asmTest :: Int

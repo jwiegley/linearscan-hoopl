@@ -15,6 +15,7 @@ import Programs.Overcommit
 import Programs.Incoming
 import Programs.Residency
 import Programs.Residency2
+import Programs.Residency3
 import Programs.BranchAlloc
 import Programs.Returned
 import Programs.Restoration
@@ -49,6 +50,7 @@ main = hspec $ do
     it "Properly reserves incoming registers"      $ runTest regsIncoming
     it "Handles edge-case 1 residency scenario"    $ runTest residency
     it "Handles edge-case 2 residency scenario"    $ runTest residency2
+    it "Handles edge-case 3 residency scenario"    $ runTest residency3
     it "A case of residency involving branches"    $ runTest branchAlloc
     it "Frees registers properly before returning" $ runTest freeBeforeReturn
     it "Restoration after a graph edge split"      $ runTest restoration
@@ -150,8 +152,8 @@ sanityTests = do
         add (r2 v3) (r3 v4) (r1 v5)
         restore 0 (r2 v7)
         add (r4 v6) (r2 v7) (r2 v8)
-        restore 16 (r4 v10)
         restore 8 (r3 v9)
+        restore 16 (r4 v10)
         add (r3 v9) (r4 v10) (r3 v11)
         restore 24 (r4 v12)
         add (r4 v12) (r5 v13) (r4 v14)
@@ -367,6 +369,34 @@ sanityTests = do
         add (r18 v27) (r19 v28) (r29 v29)
         return_
 
+  it "Handles blocks with no instructions" $
+      flip (asmTestLiteral VerifyEnabled 32) Nothing $ do
+          label "L1" $ do
+              copy v1 v5
+              return_
+          label "entry" $
+              jump "L1"
+          label "L3" $ do
+              move v3 v5
+              copy v4 v0
+              lc v6
+              add v4 v3 v3
+              call 2
+              call 1
+              return_
+          label "L4" return_
+          label "L5" $ do
+              copy pr8 v6
+              add v3 v5 v5
+              offlpi v0
+              copy v1 v2
+              call 3
+              return_
+          label "L6" $ do
+              move v2 v0
+              copy v0 v4
+              branch v6 "L6" "L4"
+
 spillTests :: SpecWith ()
 spillTests = do
   it "No spilling necessary" $ asmTest 32
@@ -446,18 +476,6 @@ spillTests = do
         lc (r21 v31)
         lc (r22 v33)
         lc (r23 v34)
-        add (r0  v0) (r1 v1) (r24 v2)
-        add (r2  v3) (r3 v4) (r25 v5)
-        add (r4  v6) (r5 v7) (r26 v8)
-        add (r6  v9) (r7 v10) (r27 v11)
-        add (r8  v12) (r9 v13) (r28 v14)
-        add (r10 v15) (r11 v16) (r29 v17)
-        add (r12 v18) (r13 v19) (r30 v20)
-        add (r14 v21) (r15 v22) (r31 v23)
-        add (r16 v24) (r17 v25) (r31 v26)
-        add (r18 v27) (r19 v28) (r31 v29)
-        add (r20 v30) (r21 v31) (r31 v32)
-        add (r22 v33) (r23 v34) (r31 v35)
         add (r0 v0) (r1 v1) (r24 v2)
         add (r2 v3) (r3 v4) (r25 v5)
         add (r4 v6) (r5 v7) (r26 v8)
@@ -465,11 +483,34 @@ spillTests = do
         add (r8 v12) (r9 v13) (r28 v14)
         add (r10 v15) (r11 v16) (r29 v17)
         add (r12 v18) (r13 v19) (r30 v20)
-        add (r14 v21) (r15 v22) (r0 v23)
-        add (r16 v24) (r17 v25) (r1 v26)
-        add (r18 v27) (r19 v28) (r2 v29)
-        add (r20 v30) (r21 v31) (r3 v32)
-        add (r22 v33) (r23 v34) (r31 v35)
+        add (r14 v21) (r15 v22) (r31 v23)
+        -- jww (2015-08-26): Why is this spilling, instead of re-using r31? It
+        -- has to do with the r17 input being now pos+1 from the v23 output of
+        -- the preceding line.
+        save (r17 v25) 0
+        add (r16 v24) (r17 v25) (r17 v26)
+        save (r19 v28) 8
+        add (r18 v27) (r19 v28) (r19 v29)
+        save (r21 v31) 16
+        add (r20 v30) (r21 v31) (r21 v32)
+        save (r23 v34) 24
+        add (r22 v33) (r23 v34) (r23 v35)
+        add (r0 v0) (r1 v1) (r24 v2)
+        add (r2 v3) (r3 v4) (r25 v5)
+        add (r4 v6) (r5 v7) (r26 v8)
+        add (r6 v9) (r7 v10) (r27 v11)
+        add (r8 v12) (r9 v13) (r28 v14)
+        add (r10 v15) (r11 v16) (r29 v17)
+        add (r12 v18) (r13 v19) (r30 v20)
+        add (r14 v21) (r15 v22) (r31 v23)
+        restore 0 (r0 v25)
+        add (r16 v24) (r0 v25) (r17 v26)
+        restore 8 (r0 v28)
+        add (r18 v27) (r0 v28) (r19 v29)
+        restore 16 (r0 v31)
+        add (r20 v30) (r0 v31) (r21 v32)
+        restore 24 (r0 v34)
+        add (r22 v33) (r0 v34) (r23 v35)
         return_
 
   it "Spilling one variable" $ asmTest 32
@@ -543,41 +584,29 @@ spillTests = do
         lc (r19 v28)
         lc (r20 v30)
         lc (r21 v31)
-        add (r0  v0)  (r1  v1)  (r22 v2)
-        add (r2  v3)  (r3  v4)  (r23 v5)
-        add (r4  v6)  (r5  v7)  (r24 v8)
-        add (r6  v9)  (r7  v10) (r25 v11)
-        add (r8  v12) (r9  v13) (r26 v14)
+        add (r0 v0) (r1 v1) (r22 v2)
+        add (r2 v3) (r3 v4) (r23 v5)
+        add (r4 v6) (r5 v7) (r24 v8)
+        add (r6 v9) (r7 v10) (r25 v11)
+        add (r8 v12) (r9 v13) (r26 v14)
         add (r10 v15) (r11 v16) (r27 v17)
         add (r12 v18) (r13 v19) (r28 v20)
         add (r14 v21) (r15 v22) (r29 v23)
         add (r16 v24) (r17 v25) (r30 v26)
+        -- jww (2015-08-26): This avoids spilling, even though we expect it!
         add (r18 v27) (r19 v28) (r31 v29)
-
-        -- When we reach the 32nd variable considered (which happens to be
-        -- v30), we must spill a register because there are not 32 registers.
-        -- So we pick the first register, counting from 0, whose next use
-        -- position is the furthest from this position.
-        save (r31 v29) 0
-
-        add (r20 v30) (r21 v31) (r31 v32)
-
-        add (r0 v0)   (r1 v1)   (r22 v2)
-        add (r2 v3)   (r3 v4)   (r23 v5)
-        add (r4 v6)   (r5 v7)   (r24 v8)
-        add (r6 v9)   (r7 v10)  (r25 v11)
-        add (r8 v12)  (r9 v13)  (r26 v14)
+        add (r20 v30) (r21 v31) (r21 v32)
+        add (r0 v0) (r1 v1) (r22 v2)
+        add (r2 v3) (r3 v4) (r23 v5)
+        add (r4 v6) (r5 v7) (r24 v8)
+        add (r6 v9) (r7 v10) (r25 v11)
+        add (r8 v12) (r9 v13) (r26 v14)
         add (r10 v15) (r11 v16) (r27 v17)
         add (r12 v18) (r13 v19) (r28 v20)
         add (r14 v21) (r15 v22) (r29 v23)
         add (r16 v24) (r17 v25) (r30 v26)
-
-        -- When it comes time to reload v29, we pick the first available
-        -- register.
-        restore 0 (r0 v29)
-
-        add (r18 v27) (r0 v29) (r19 v28)
-        add (r20 v30) (r31 v32) (r21 v31)
+        add (r18 v27) (r31 v29) (r19 v28)
+        add (r20 v30) (r21 v32) (r0 v31)
         return_
 
   it "Higher register pressure" $ asmTest 3
@@ -601,13 +630,11 @@ spillTests = do
         add (r2 v2) (r1 v1) (r0 v3)
         save (r1 v1) 0
         add (r0 v3) (r2 v2) (r1 v4)
-        save (r2 v2) 8
-        add (r1 v4) (r0 v3) (r2 v5)
-        save (r2 v5) 16
-        restore 8 (r2 v2)
+        save (r1 v4) 8
+        add (r1 v4) (r0 v3) (r1 v5)
         add (r2 v2) (r0 v3) (r0 v6)
-        restore 16 (r2 v5)
-        add (r1 v4) (r2 v5) (r1 v7)
+        restore 8 (r2 v4)
+        add (r2 v4) (r1 v5) (r1 v7)
         add (r0 v6) (r1 v7) (r0 v8)
         restore 0 (r1 v1)
         add (r0 v8) (r1 v1) (r0 v0)
@@ -632,11 +659,11 @@ spillTests = do
         lc (r1 v1)
         add (r0 v0) (r1 v1) (r2 v2)
         add (r2 v2) (r1 v1) (r3 v3)
+        add (r3 v3) (r2 v2) (r0 v4)
         save (r1 v1) 0
-        add (r3 v3) (r2 v2) (r1 v4)
-        add (r1 v4) (r3 v3) (r0 v5)
+        add (r0 v4) (r3 v3) (r1 v5)
         add (r2 v2) (r3 v3) (r2 v6)
-        add (r1 v4) (r0 v5) (r0 v7)
+        add (r0 v4) (r1 v5) (r0 v7)
         add (r2 v6) (r0 v7) (r0 v8)
         restore 0 (r1 v1)
         add (r0 v8) (r1 v1) (r0 v0)
@@ -708,28 +735,23 @@ blockTests = do
         lc (r0 v0)
         lc (r1 v1)
         add (r0 v0) (r1 v1) (r2 v2)
-        branch (r2 v2) "B3" "B2"
+        branch (r2 v2) "L2" "L3"
 
-    label "B2" $ do
-        save (r0 v0) 0
-        add (r1 v1) (r2 v2) (r0 v3)
-        restore 0 (r2 v0)
-        add (r2 v0) (r0 v3) (r1 v4)
-        save (r0 v3) 8
-        add (r2 v0) (r1 v4) (r0 v5)
-        add (r1 v4) (r0 v5) (r0 v6)
-        restore 8 (r1 v3)
-        add (r0 v6) (r1 v3) (r0 v7)
-        jump "B4"
-
-    label "B3" $ do
+    label "L2" $ do
         move (r2 v2) (r0 v2)
-        move (r1 v1) (r2 v1)
-        add (r2 v1) (r0 v2) (r1 v3)
-        jump "B4"
+        add (r1 v1) (r0 v2) (r2 v3)
+        jump "L4"
 
-    label "B4" $ do
-        add (r1 v3) (r1 v3) (r0 v0)
+    label "L3" $ do
+        add (r1 v1) (r2 v2) (r2 v3)
+        add (r0 v0) (r2 v3) (r1 v4)
+        add (r0 v0) (r1 v4) (r0 v5)
+        add (r1 v4) (r0 v5) (r0 v6)
+        add (r0 v6) (r2 v3) (r0 v7)
+        jump "L4"
+
+    label "L4" $ do
+        add (r2 v3) (r2 v3) (r0 v0)
         return_
 
   it "When resolving moves are not needed" $ asmTest 4
@@ -804,53 +826,53 @@ blockTests = do
             move v5 v4
             lc v19
             move v20 v17
-            jump "L6") $
+            jump "L6") $ do
 
-    do label "entry" $ do
-           lc (r0 v3)
-           lc (r1 v4)
-           lc (r2 v15)
-           lc (r3 v20)
-           save (r3 v20) 0
-           jump "L3"
+    label "entry" $ do
+        lc (r0 v3)
+        lc (r1 v4)
+        lc (r2 v15)
+        lc (r3 v20)
+        jump "L3"
 
-       label "L3" $ do
-           move (r0 v3) (r3 v9)
-           move (r3 v9) (r3 v11)
-           move (r3 v11) (r3 v10)
-           move (r3 v10) (r3 v12)
-           move (r3 v12) (r3 v13)
-           save (r0 v3) 8
-           lc (r0 v14)
-           save (r0 v14) 16
-           move (r2 v15) (r0 v5)
-           jump "L6"
+    label "L3" $ do
+        save (r0 v3) 0
+        move (r0 v3) (r0 v9)
+        move (r0 v9) (r0 v11)
+        move (r0 v11) (r0 v10)
+        move (r0 v10) (r0 v12)
+        move (r0 v12) (r0 v13)
+        save (r0 v13) 8
+        lc (r0 v14)
+        save (r0 v14) 16
+        move (r2 v15) (r0 v5)
+        jump "L6"
 
-       label "L2" $ do
-           lc (r3 v21)
-           save (r2 v15) 24
-           move (r3 v21) (r2 v18)
-           move (r0 v5) (r1 v4)
-           save (r3 v21) 32
-           lc (r3 v19)
-           save (r2 v18) 40
-           save (r3 v19) 48
-           restore 0 (r3 v20)
-           move (r3 v20) (r2 v17)
-           save (r3 v20) 0
-           restore 24 (r2 v15)
-           jump "L6"
+    label "L2" $ do
+        save (r2 v15) 24
+        lc (r2 v21)
+        save (r2 v21) 32
+        move (r2 v21) (r2 v18)
+        move (r0 v5) (r1 v4)
+        save (r2 v18) 40
+        lc (r2 v19)
+        save (r3 v20) 48
+        move (r3 v20) (r3 v17)
+        restore 24 (r2 v15)
+        restore 48 (r3 v20)
+        jump "L6"
 
-       label "L6" $
-           branch (r1 v4) "L5" "L2"
+    label "L6" $ do
+        branch (r1 v4) "L5" "L2"
 
-       label "L5" $ do
-           restore 0 (r3 v20)   -- jww (2015-05-26): should be unnecessary
-           save (r2 v15) 24
-           save (r3 v20) 0
-           restore 24 (r2 v15)
-           restore 8 (r0 v3)
-           jump "L3"
+    label "L5" $ do
+        -- jww (2015-05-26): all of these should be unnecessary?
+        save (r2 v15) 24
+        save (r3 v20) 48
+        restore 0 (r0 v3)
+        restore 24 (r2 v15)
+        restore 48 (r3 v20)
+        jump "L3"
 
 callTests :: SpecWith ()
 callTests = do
@@ -876,17 +898,17 @@ callTests = do
         add (r2 v2) (r3 v1) (r1 v3)
         save (r3 v1) 0
         add (r1 v3) (r2 v2) (r3 v4)
-        save (r2 v2) 8
-        add (r3 v4) (r1 v3) (r2 v5)
-        save (r1 v3) 16
-        save (r3 v4) 24
-        save (r2 v5) 32
+        save (r3 v4) 8
+        add (r3 v4) (r1 v3) (r3 v5)
+        save (r2 v2) 16
+        save (r1 v3) 24
+        save (r3 v5) 32
         call 1000
-        restore 16 (r2 v3)
-        restore 8 (r1 v2)
+        restore 16 (r1 v2)
+        restore 24 (r2 v3)
         add (r1 v2) (r2 v3) (r1 v6)
+        restore 8 (r2 v4)
         restore 32 (r3 v5)
-        restore 24 (r2 v4)
         add (r2 v4) (r3 v5) (r2 v7)
         add (r1 v6) (r2 v7) (r1 v8)
         restore 0 (r2 v1)
@@ -944,29 +966,29 @@ callTests = do
 
     label "entry" $ do
         lc (r31 v2)
+        lc (r30 v3)
+        lc (r29 v12)
+        lc (r28 v16)
+        lc (r27 v17)
+        lc (r26 v35)
+        lc (r25 v42)
+        lc (r24 v45)
+        lc (r23 v51)
+        lc (r22 v53)
+        lc (r21 v90)
+        lc (r20 v100)
         save (r31 v2) 0
-        lc (r31 v3)
-        save (r31 v3) 8
-        lc (r31 v12)
-        save (r31 v12) 16
-        lc (r31 v16)
-        save (r31 v16) 24
-        lc (r31 v17)
-        save (r31 v17) 32
-        lc (r31 v35)
-        save (r31 v35) 40
-        lc (r31 v42)
-        save (r31 v42) 48
-        lc (r31 v45)
-        save (r31 v45) 56
-        lc (r31 v51)
-        save (r31 v51) 64
-        lc (r31 v53)
-        save (r31 v53) 72
-        lc (r31 v90)
-        save (r31 v90) 80
-        lc (r31 v100)
-        save (r31 v100) 88
+        save (r30 v3) 8
+        save (r29 v12) 16
+        save (r28 v16) 24
+        save (r27 v17) 32
+        save (r26 v35) 40
+        save (r25 v42) 48
+        save (r24 v45) 56
+        save (r23 v51) 64
+        save (r22 v53) 72
+        save (r21 v90) 80
+        save (r20 v100) 88
         call 97
         restore 56 (r0 v45)
         restore 64 (r1 v51)
@@ -977,18 +999,18 @@ callTests = do
         branch (r1 v42) "L2" "L3"
 
     label "L2" $ do
-        save (r31 v98) 104
-        lc (r31 v95)
+        lc (r30 v95)
         restore 80 (r1 v90)
-        save (r31 v95) 112
-        move (r1 v90) (r31 v43)
-        save (r31 v43) 120
+        move (r1 v90) (r29 v43)
+        save (r29 v43) 104
+        save (r30 v95) 112
+        save (r31 v98) 120
         call 95
         call 64
         restore 72 (r1 v53)
         move (r1 v53) (r1 v58)
         restore 24 (r2 v16)
-        restore 104 (r3 v98)
+        restore 120 (r3 v98)
         add (r3 v98) (r2 v16) (r0 v100)
         restore 8 (r3 v3)
         restore 40 (r2 v35)
@@ -1007,15 +1029,15 @@ callTests = do
     label "L4" $ do
         nop
         restore 88 (r0 v100)
-        move (r0 v100) (r31 v44)
-        save (r31 v44) 96
+        move (r0 v100) (r30 v44)
+        save (r30 v44) 96
         call 30
         call 32
         jump "L5"
 
     label "L5" $ do
-        lc (r31 v3)
-        save (r31 v3) 8
+        lc (r30 v3)
+        save (r30 v3) 8
         call 35
         lc (r1 v73)
         return_

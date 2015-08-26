@@ -32,7 +32,7 @@ class HooplNode nv => NodeAlloc nv nr | nv -> nr, nr -> nv where
     mkJumpOp  :: Label -> nv O C
 
     getReferences :: nv e x -> [VarInfo]
-    setRegisters  :: [(Int, PhysReg)] -> nv e x -> Env (nr e x)
+    setRegisters  :: [((VarId, VarKind), PhysReg)] -> nv e x -> Env (nr e x)
 
     mkMoveOps    :: PhysReg -> VarId -> PhysReg -> Env [nr O O]
     mkSaveOps    :: PhysReg -> VarId -> Env [nr O O]
@@ -65,11 +65,17 @@ blockInfo getBlockId = BlockInfo
     , blockOps = \(BlockCC a b z) ->
         ([NodeCO a], Prelude.map NodeOO (blockToList b), [NodeOC z])
 
-    , setBlockOps = \_ [a] b [z] ->
-        BlockCC
-            (getNodeCO a)
-            (blockFromList (Prelude.map getNodeOO b))
-            (getNodeOC z)
+    , setBlockOps = \_ as b zs ->
+        case as of
+            [a] -> case zs of
+                [z] ->
+                    BlockCC (getNodeCO a)
+                            (blockFromList (Prelude.map getNodeOO b))
+                            (getNodeOC z)
+                [] -> error "End node missing!"
+                _ -> error "Too many end nodes"
+            [] -> error "Beginning node missing!"
+            _ -> error "Too many beginning nodes"
     }
 
 opInfo :: NodeAlloc nv nr => OpInfo Env (NodeV nv) (NodeV nr)
@@ -109,20 +115,20 @@ allocateHoopl :: (NodeAlloc nv nr, NonLocal nv, NonLocal nr)
               -> UseVerifier  -- ^ Whether to use allocation verifier
               -> Label        -- ^ Label of graph entry block
               -> Graph nv C C -- ^ Program graph
-              -> Either (String, [String]) (Graph nr C C)
+              -> (String, Either [String] (Graph nr C C))
 allocateHoopl regs offset slotSize useVerifier entry graph =
-    newGraph <$> runIdentity (go (1 + IM.size (unsafeCoerce body)))
+    fmap newGraph <$> runIdentity (go (1 + IM.size (unsafeCoerce body)))
   where
     newGraph xs = GMany NothingO (newBody xs) NothingO
       where
         newBody = Data.Foldable.foldl' (flip addBlock) emptyBody
 
-    blocks = postorder_dfs_from body entry
     GMany NothingO body NothingO = graph
 
     go n = evalStateT alloc ([n..], newSpillStack offset slotSize)
       where
-        alloc = allocate regs (blockInfo getBlockId) opInfo useVerifier blocks
+        alloc = allocate regs (blockInfo getBlockId) opInfo useVerifier $
+                    postorder_dfs_from body entry
           where
             getBlockId :: Hoopl.Label -> Env Int
             getBlockId = return . unsafeCoerce

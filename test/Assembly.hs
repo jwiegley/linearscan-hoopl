@@ -33,7 +33,8 @@ data Instruction v
     deriving (Eq, Functor, Foldable, Traversable)
 
 instance Show r => Show (Instruction r) where
-    show (Add x1 x2 x3) = "add " ++ show x1 ++ " " ++ show x2 ++ " " ++ show x3
+    show (Add x1 x2 x3) =
+        "add " ++ show x1 ++ " " ++ show x2 ++ " " ++ show x3
     show (Offp x1 x2 x3) =
         "offp " ++ show x1 ++ " " ++ show x2 ++ " " ++ show x3
     show (Offlpi x) = "offlpi " ++ show x
@@ -108,23 +109,64 @@ instance HooplNode (Node v) where
     mkBranchNode = Jump
     mkLabelNode  = Label
 
-variables :: Applicative f => LensLike f (Node v1 e x) (Node v2 e x) v1 v2
+vinfo k en = VarInfo
+    { varId       = en
+    , varKind     = k
+    , regRequired = True
+    }
+
+vinfos k en = [vinfo k en]
+
+instrVars :: Applicative f
+          => LensLike f (Instruction v1) (Instruction v2)
+                        (v1, Either PhysReg VarId -> [VarInfo]) v2
+instrVars f = go
+  where
+    go Nop = pure Nop
+    go (Add s1 s2 d1) =
+        Add <$> f (s1, vinfos Input)
+            <*> f (s2, vinfos Input)
+            <*> f (d1, vinfos Output)
+    go (Offp x1 x2 x3) =
+        Offp <$> f (x1, vinfos Input)
+             <*> f (x2, vinfos Input)
+             <*> f (x3, vinfos Output)
+    -- jww (2015-08-25): I need to deal with the possibility that different
+    -- registers are allocated for the input and output sides.
+    go (Offlpi x) =
+        Offlpi <$> f (x, vinfos Input -- <> vinfos Output
+                     )
+
+-- Traverse the input and temp/output variables of each instruction.
+variables :: Applicative f
+          => LensLike f (Node v1 e x) (Node v2 e x)
+                        (v1, Either PhysReg VarId -> [VarInfo]) v2
 variables f = go
   where
-    go (Alloc msrc dst)           = Alloc <$> traverse f msrc <*> f dst
-    go (Reclaim src)              = Reclaim <$> f src
-    go (Instr i)                  = Instr <$> traverse f i
-    go (LoadConst c dst)          = LoadConst c <$> f dst
-    go (Move src dst)             = Move <$> f src <*> f dst
-    go (Copy src dst)             = Copy <$> f src <*> f dst
-    go (Save src x)               = Save <$> f src <*> pure x
-    go (Restore x src)            = Restore x <$> f src
-    go (Trace str)                = pure $ Trace str
-    go (Branch x1 cond x2 x3)     = Branch x1 <$> f cond <*> pure x2 <*> pure x3
-    go (Call cc i)                = pure $ Call cc i
-    go (ReturnInstr liveInRegs i) = ReturnInstr liveInRegs <$> traverse f i
-    go (Label x)                  = pure $ Label x
-    go (Jump x)                   = pure $ Jump x
+    go (Alloc msrc dst) =
+        Alloc <$> traverse (\x -> f (x, vinfos Input)) msrc
+              <*> f (dst, \en -> vinfos Output en <> blockRegs2to16)
+      where
+        blockRegs2to16 = [ vinfo Output (Left n) | n <- [2..16] ]
+
+    go (Reclaim src)          = Reclaim <$> f (src, vinfos Output)
+    go (Instr i)              = Instr <$> sequenceA (over instrVars f i)
+    go (LoadConst c dst)      = LoadConst c <$> f (dst, vinfos Output)
+    go (Move src dst)         = Move <$> f (src, vinfos Input)
+                                     <*> f (dst, vinfos Output)
+    go (Copy src dst)         = Copy <$> f (src, vinfos Input)
+                                     <*> f (dst, vinfos Output)
+    go (Save src x)           = Save <$> f (src, vinfos Input) <*> pure x
+    go (Restore x src)        = Restore x <$> f (src, vinfos Output)
+    go (Trace str)            = pure $ Trace str
+    go (Branch x1 cond x2 x3) = Branch x1 <$> f (cond, vinfos Input)
+                                          <*> pure x2
+                                          <*> pure x3
+    go (Call cc i)            = pure $ Call cc i
+    go (ReturnInstr rs i)     = ReturnInstr rs
+                                    <$> sequenceA (over instrVars f i)
+    go (Label x)              = pure $ Label x
+    go (Jump x)               = pure $ Jump x
 
 add :: v -> v -> v -> BodyNode (Node v)
 add x0 x1 x2 = bodyNode $ Instr (Add x0 x1 x2)
@@ -185,7 +227,7 @@ instance VarReg IRVar where
 instance VarReg (Assign a PhysReg) where
     varReg (Assign _ b) = b
 
-data IRVar = PhysicalIV PhysReg | VirtualIV Int deriving Eq
+data IRVar = PhysicalIV PhysReg | VirtualIV VarId deriving Eq
 
 instance Show IRVar where
     show (PhysicalIV r) = "pr" ++ show r
@@ -193,11 +235,11 @@ instance Show IRVar where
 
 instance NodeAlloc (Node IRVar) (Node (Assign VarId PhysReg)) where
     isCall (Call {}) = True
-    isCall _ = False
+    isCall _         = False
 
     isBranch (Jump {})   = True
     isBranch (Branch {}) = True
-    isBranch _ = False
+    isBranch _           = False
 
     retargetBranch (Jump _) _ lab = Jump lab
     retargetBranch (Branch b v x y) old lab
@@ -208,51 +250,22 @@ instance NodeAlloc (Node IRVar) (Node (Assign VarId PhysReg)) where
     mkLabelOp = Label
     mkJumpOp  = Jump
 
-    getReferences = go
+    getReferences = (^. variables.to f)
       where
-        go :: Node IRVar e x -> [VarInfo]
-        go (Label _)         = mempty
-        go (Alloc msrc dst)  = maybe mempty (mkv Input) msrc <>
-                               mkv Output dst <>
-                               [ vinfo Output (Left n) | n <- [2..16] ]
-        go (Reclaim src)     = mkv Input src
-        go (Instr i)         = fromInstr i
-        go (Call _ _)        = mempty
-        go (LoadConst _ v)   = mkv Output v
-        go (Move src dst)    = mkv Input src <> mkv Output dst
-        go (Copy src dst)    = mkv Input src <> mkv Output dst
-        go (Save src _)      = mkv Input src
-        go (Restore _ dst)   = mkv Output dst
-        go (Trace _)         = mempty
-        go (Jump _)          = mempty
-        go (Branch _ v _ _)  = mkv Input v
-        go (ReturnInstr _ i) = fromInstr i
+        f (PhysicalIV r, k) = k (Left r)
+        f (VirtualIV v,  k) = k (Right v)
 
-        fromInstr :: Instruction IRVar -> [VarInfo]
-        fromInstr Nop = mempty
-        fromInstr (Add s1 s2 d1) =
-            mkv Input s1 <> mkv Input s2 <> mkv Output d1
-        fromInstr (Offp x1 x2 x3) =
-            mkv Input x1 <> mkv Input x2 <> mkv Output x3
-        fromInstr (Offlpi x) = mkv Input x <> mkv Output x
-
-        mkv :: VarKind -> IRVar -> [VarInfo]
-        mkv k (PhysicalIV n) = [vinfo k (Left n)]
-        mkv k (VirtualIV n)  = [vinfo k (Right n)]
-
-        vinfo k en = VarInfo
-            { varId       = en
-            , varKind     = k
-            , regRequired = True
-            }
-
-    setRegisters m g = return $ over variables go g
+    setRegisters m = return . over variables go
       where
-        go :: IRVar -> Assign VarId PhysReg
-        go (PhysicalIV r) = Assign (-1) r
-        go (VirtualIV n)  = Assign n (fromMaybe (-1) (Data.List.lookup n m))
+        go (PhysicalIV r, _) = Assign (-1) r
+        go (VirtualIV  n, k) = case k (Right n) of
+            [] -> error "No kind assigned to variable"
+            v : _ ->
+                -- jww (2015-08-25): Must handle multiple roles by
+                -- introducing move instructions.
+                Assign n (fromMaybe (-1) (Data.List.lookup (n, varKind v) m))
 
-    mkMoveOps sreg svar dreg = do
+    mkMoveOps sreg svar dreg =
         return [Move (Assign svar sreg) (Assign svar dreg)]
 
     mkSaveOps sreg dvar = do
