@@ -97,7 +97,7 @@ instance Show (Graph' Block (Node (Assign VarId PhysReg)) C C) where
 
 generatedTests :: SpecWith ()
 generatedTests = it "Handles generated tests" $ do
-  res <- quickCheckWithResult stdArgs { maxSuccess = 1000000000 } $
+  res <- quickCheckWithResult stdArgs { maxSuccess = 1000 } $
       forAll arbitrary testGraph
   isSuccess res `shouldBe` True
 
