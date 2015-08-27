@@ -8,7 +8,7 @@ import Assembly
 import Generated
 import LinearScan (UseVerifier(..))
 import LinearScan.Hoopl.DSL
--- import Programs.Blocked
+import Programs.Blocked
 import Programs.Exhaustion
 import Programs.Ordered
 import Programs.Overcommit
@@ -44,7 +44,7 @@ main = hspec $ do
   describe "Edge-case tests" $ do
     let runTest k = asmTestLiteral VerifyEnabled 32 k Nothing
     it "Near exhaustion program"                   $ runTest exhaustion1
-    -- it "Blocked register program"                  $ runTest regBlocked
+    it "Blocked register program"                  $ runTest regBlocked
     it "Orders reservations"                       $ runTest regOrdered
     it "Guards against over-committing"            $ runTest overCommitted
     it "Properly reserves incoming registers"      $ runTest regsIncoming
