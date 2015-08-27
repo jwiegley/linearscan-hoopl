@@ -43,7 +43,7 @@ main = hspec $ do
 
   describe "Edge-case tests" $ do
     let runTest k = asmTestLiteral VerifyEnabled 32 k Nothing
-    it "Near exhaustion program" $ asmTest_ 32 exhaustion1
+    it "Near exhaustion program"                   $ runTest exhaustion1
     -- it "Blocked register program"                  $ runTest regBlocked
     it "Orders reservations"                       $ runTest regOrdered
     it "Guards against over-committing"            $ runTest overCommitted
