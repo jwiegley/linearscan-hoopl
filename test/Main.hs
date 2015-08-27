@@ -8,25 +8,26 @@ import Assembly
 import Generated
 import LinearScan (UseVerifier(..))
 import LinearScan.Hoopl.DSL
-import Programs.Blocked
-import Programs.Exhaustion
-import Programs.Ordered
-import Programs.Overcommit
-import Programs.Incoming
-import Programs.Residency
-import Programs.Residency2
-import Programs.Residency3
-import Programs.BranchAlloc
-import Programs.Returned
-import Programs.Restoration
 import Programs.Allocation
 import Programs.Allocation2
 import Programs.Allocation3
 import Programs.Allocation4
 import Programs.Allocation5
-import Programs.UponEntry
+import Programs.Blocked
+import Programs.BranchAlloc
+import Programs.Exhaustion
+import Programs.Incoming
+import Programs.Ordered
+import Programs.Overcommit
 import Programs.Overlapped
+import Programs.Reservation
+import Programs.Residency
+import Programs.Residency2
+import Programs.Residency3
+import Programs.Restoration
 import Programs.ReturnAssign
+import Programs.Returned
+import Programs.UponEntry
 import Test.Hspec
 
 -- | The objective of these tests is to present a program to the register
@@ -43,25 +44,27 @@ main = hspec $ do
 
   describe "Edge-case tests" $ do
     let runTest k = asmTestLiteral VerifyEnabled 32 k Nothing
-    it "Near exhaustion program"                   $ runTest exhaustion1
-    it "Blocked register program"                  $ runTest regBlocked
-    it "Orders reservations"                       $ runTest regOrdered
-    it "Guards against over-committing"            $ runTest overCommitted
-    it "Properly reserves incoming registers"      $ runTest regsIncoming
-    it "Handles edge-case 1 residency scenario"    $ runTest residency
-    it "Handles edge-case 2 residency scenario"    $ runTest residency2
-    it "Handles edge-case 3 residency scenario"    $ runTest residency3
+    it "Near exhaustion program" $ asmTest_ 32 exhaustion1
+    -- it "Near exhaustion program"                   $ runTest exhaustion1
     it "A case of residency involving branches"    $ runTest branchAlloc
+    it "Allocates correctly on block entry"        $ runTest uponEntry
+    it "Blocked register program"                  $ runTest regBlocked
+    it "Does not assign after a return_"             $ runTest returnAssign
     it "Frees registers properly before returning" $ runTest freeBeforeReturn
-    it "Restoration after a graph edge split"      $ runTest restoration
+    it "Guards against over-committing"            $ runTest overCommitted
     it "Handles edge-case 1 allocation scenario"   $ runTest allocation
     it "Handles edge-case 2 allocation scenario"   $ runTest allocation2
     it "Handles edge-case 3 allocation scenario"   $ runTest allocation3
     it "Handles edge-case 4 allocation scenario"   $ runTest allocation4
     it "Handles edge-case 5 allocation scenario"   $ runTest allocation5
-    it "Allocates correctly on block entry"        $ runTest uponEntry
+    it "Handles edge-case 1 reservation scenario"  $ runTest reservation
+    it "Handles edge-case 1 residency scenario"    $ runTest residency
+    it "Handles edge-case 2 residency scenario"    $ runTest residency2
+    it "Handles edge-case 3 residency scenario"    $ runTest residency3
+    it "Orders reservations"                       $ runTest regOrdered
+    it "Properly reserves incoming registers"      $ runTest regsIncoming
     it "Register over-allocation edge-case"        $ runTest overlapped
-    it "Does not assign after a return_"             $ runTest returnAssign
+    it "Restoration after a graph edge split"      $ runTest restoration
 
   describe "Generated tests" generatedTests
 
