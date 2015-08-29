@@ -43,9 +43,13 @@ main = hspec $ do
   describe "Loop tests" loopTests
 
   describe "Edge-case tests" $ do
-    let runTest k = asmTestLiteral VerifyEnabled 32 k Nothing
+    -- These tests use the strict verifier
     it "Near exhaustion program" $ asmTest_ 32 exhaustion1
-    -- it "Near exhaustion program"                   $ runTest exhaustion1
+
+    -- These were copied from the generated test output when failures were
+    -- found, so in general they are too loose to work under the strict
+    -- verifier.
+    let runTest k = asmTestLiteral VerifyEnabled 32 k Nothing
     it "A case of residency involving branches"    $ runTest branchAlloc
     it "Allocates correctly on block entry"        $ runTest uponEntry
     it "Blocked register program"                  $ runTest regBlocked
