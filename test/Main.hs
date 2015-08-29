@@ -13,6 +13,7 @@ import Programs.Allocation2
 import Programs.Allocation3
 import Programs.Allocation4
 import Programs.Allocation5
+import Programs.Allocation6
 import Programs.Blocked
 import Programs.BranchAlloc
 import Programs.Exhaustion
@@ -56,15 +57,16 @@ main = hspec $ do
     it "Does not assign after a return_"             $ runTest returnAssign
     it "Frees registers properly before returning" $ runTest freeBeforeReturn
     it "Guards against over-committing"            $ runTest overCommitted
-    it "Handles edge-case 1 allocation scenario"   $ runTest allocation
-    it "Handles edge-case 2 allocation scenario"   $ runTest allocation2
-    it "Handles edge-case 3 allocation scenario"   $ runTest allocation3
-    it "Handles edge-case 4 allocation scenario"   $ runTest allocation4
-    it "Handles edge-case 5 allocation scenario"   $ runTest allocation5
-    it "Handles edge-case 1 reservation scenario"  $ runTest reservation
-    it "Handles edge-case 1 residency scenario"    $ runTest residency
-    it "Handles edge-case 2 residency scenario"    $ runTest residency2
-    it "Handles edge-case 3 residency scenario"    $ runTest residency3
+    it "Handles edge-case allocation scenario 1"   $ runTest allocation
+    it "Handles edge-case allocation scenario 2"   $ runTest allocation2
+    it "Handles edge-case allocation scenario 3"   $ runTest allocation3
+    it "Handles edge-case allocation scenario 4"   $ runTest allocation4
+    it "Handles edge-case allocation scenario 5"   $ runTest allocation5
+    it "Handles edge-case allocation scenario 6"   $ runTest allocation6
+    it "Handles edge-case reservation scenario 1"  $ runTest reservation
+    it "Handles edge-case residency scenario 1"    $ runTest residency
+    it "Handles edge-case residency scenario 2"    $ runTest residency2
+    it "Handles edge-case residency scenario 3"    $ runTest residency3
     it "Orders reservations"                       $ runTest regOrdered
     it "Properly reserves incoming registers"      $ runTest regsIncoming
     it "Register over-allocation edge-case"        $ runTest overlapped
