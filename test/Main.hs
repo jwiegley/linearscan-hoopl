@@ -14,6 +14,7 @@ import Programs.Allocation3
 import Programs.Allocation4
 import Programs.Allocation5
 import Programs.Allocation6
+import Programs.Assignment
 import Programs.Blocked
 import Programs.BranchAlloc
 import Programs.Exhaustion
@@ -63,6 +64,7 @@ main = hspec $ do
     it "Handles edge-case allocation scenario 4"   $ runTest allocation4
     it "Handles edge-case allocation scenario 5"   $ runTest allocation5
     it "Handles edge-case allocation scenario 6"   $ runTest allocation6
+    it "Handles edge-case assignment scenario 1"   $ runTest assignment
     it "Handles edge-case reservation scenario 1"  $ runTest reservation
     it "Handles edge-case residency scenario 1"    $ runTest residency
     it "Handles edge-case residency scenario 2"    $ runTest residency2
@@ -901,27 +903,27 @@ callTests = do
         return_) $
 
     label "entry" $ do
-        lc (r0 v0)
-        lc (r3 v1)
-        add (r0 v0) (r3 v1) (r2 v2)
-        add (r2 v2) (r3 v1) (r1 v3)
-        save (r3 v1) 0
-        add (r1 v3) (r2 v2) (r3 v4)
-        save (r3 v4) 8
-        add (r3 v4) (r1 v3) (r3 v5)
-        save (r2 v2) 16
-        save (r1 v3) 24
+        lc (r3 v0)
+        lc (r2 v1)
+        add (r3 v0) (r2 v1) (r3 v2)
+        add (r3 v2) (r2 v1) (r1 v3)
+        add (r1 v3) (r3 v2) (r0 v4)
+        save (r3 v2) 0
+        add (r0 v4) (r1 v3) (r3 v5)
+        save (r2 v1) 8
+        save (r1 v3) 16
+        save (r0 v4) 24
         save (r3 v5) 32
         call 1000
-        restore 16 (r1 v2)
-        restore 24 (r2 v3)
-        add (r1 v2) (r2 v3) (r1 v6)
-        restore 8 (r2 v4)
-        restore 32 (r3 v5)
-        add (r2 v4) (r3 v5) (r2 v7)
-        add (r1 v6) (r2 v7) (r1 v8)
-        restore 0 (r2 v1)
-        add (r1 v8) (r2 v1) (r0 v0)
+        restore 0 (r0 v2)
+        restore 16 (r1 v3)
+        add (r0 v2) (r1 v3) (r0 v6)
+        restore 24 (r1 v4)
+        restore 32 (r2 v5)
+        add (r1 v4) (r2 v5) (r1 v7)
+        add (r0 v6) (r1 v7) (r0 v8)
+        restore 8 (r1 v1)
+        add (r0 v8) (r1 v1) (r0 v0)
         return_
 
   it "Allocates between call instructions" $ asmTest 32
@@ -1009,18 +1011,18 @@ callTests = do
 
     label "L2" $ do
         lc (r30 v95)
-        restore 80 (r1 v90)
-        move (r1 v90) (r29 v43)
+        restore 80 (r0 v90)
+        move (r0 v90) (r29 v43)
         save (r29 v43) 104
         save (r30 v95) 112
         save (r31 v98) 120
         call 95
         call 64
-        restore 72 (r1 v53)
-        move (r1 v53) (r1 v58)
-        restore 24 (r2 v16)
-        restore 120 (r3 v98)
-        add (r3 v98) (r2 v16) (r0 v100)
+        restore 72 (r0 v53)
+        move (r0 v53) (r0 v58)
+        restore 24 (r1 v16)
+        restore 120 (r2 v98)
+        add (r2 v98) (r1 v16) (r1 v100)
         restore 8 (r3 v3)
         restore 40 (r2 v35)
         add (r2 v35) (r3 v3) (r2 v67)
@@ -1037,18 +1039,18 @@ callTests = do
 
     label "L4" $ do
         nop
-        restore 88 (r0 v100)
-        move (r0 v100) (r30 v44)
-        save (r30 v44) 96
+        restore 88 (r31 v100)
+        move (r31 v100) (r31 v44)
+        save (r31 v44) 96
         call 30
         call 32
         jump "L5"
 
     label "L5" $ do
-        lc (r30 v3)
-        save (r30 v3) 8
+        lc (r31 v3)
+        save (r31 v3) 8
         call 35
-        lc (r1 v73)
+        lc (r0 v73)
         return_
 
 loopTests :: SpecWith ()

@@ -122,20 +122,14 @@ instrVars :: Applicative f
                         (v1, Either PhysReg VarId -> [VarInfo]) v2
 instrVars f = go
   where
-    go Nop = pure Nop
-    go (Add s1 s2 d1) =
-        Add <$> f (s1, vinfos Input)
-            <*> f (s2, vinfos Input)
-            <*> f (d1, vinfos Output)
-    go (Offp x1 x2 x3) =
-        Offp <$> f (x1, vinfos Input)
-             <*> f (x2, vinfos Input)
-             <*> f (x3, vinfos Output)
-    -- jww (2015-08-25): I need to deal with the possibility that different
-    -- registers are allocated for the input and output sides.
-    go (Offlpi x) =
-        Offlpi <$> f (x, vinfos Input -- <> vinfos Output
-                     )
+    go Nop             = pure Nop
+    go (Add s1 s2 d1)  = Add <$> f (s1, vinfos Input)
+                             <*> f (s2, vinfos Input)
+                             <*> f (d1, vinfos Output)
+    go (Offp x1 x2 x3) = Offp <$> f (x1, vinfos Input)
+                              <*> f (x2, vinfos Input)
+                              <*> f (x3, vinfos Output)
+    go (Offlpi x)      = Offlpi <$> f (x, vinfos InputOutput)
 
 -- Traverse the input and temp/output variables of each instruction.
 variables :: Applicative f
@@ -149,7 +143,7 @@ variables f = go
       where
         blockRegs2to16 = [ vinfo Output (Left n) | n <- [2..16] ]
 
-    go (Reclaim src)          = Reclaim <$> f (src, vinfos Output)
+    go (Reclaim src)          = Reclaim <$> f (src, vinfos InputOutput)
     go (Instr i)              = Instr <$> sequenceA (over instrVars f i)
     go (LoadConst c dst)      = LoadConst c <$> f (dst, vinfos Output)
     go (Move src dst)         = Move <$> f (src, vinfos Input)
@@ -261,8 +255,6 @@ instance NodeAlloc (Node IRVar) (Node (Assign VarId PhysReg)) where
         go (VirtualIV  n, k) = case k (Right n) of
             [] -> error "No kind assigned to variable"
             v : _ ->
-                -- jww (2015-08-25): Must handle multiple roles by
-                -- introducing move instructions.
                 Assign n (fromMaybe (-1) (Data.List.lookup (n, varKind v) m))
 
     mkMoveOps sreg svar dreg =
