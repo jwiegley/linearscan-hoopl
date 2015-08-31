@@ -4,7 +4,7 @@
 }:
 mkDerivation {
   pname = "linearscan-hoopl";
-  version = "0.10.0";
+  version = "0.10.1";
   src = ./.;
   buildDepends = [
     base containers free hoopl linearscan transformers QuickCheck
