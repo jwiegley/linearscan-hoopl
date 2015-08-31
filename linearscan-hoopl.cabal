@@ -19,6 +19,10 @@ description:
   that compile into Hoople program graphs.  See the tests for a concrete
   example.
 
+Source-repository head
+  type:     git
+  location: https://github.com/jwiegley/linearscan-hoopl
+
 library
   default-language: Haskell2010
   exposed-modules:
