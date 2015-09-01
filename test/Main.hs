@@ -24,6 +24,7 @@ import Programs.Overcommit
 import Programs.Overlapped
 import Programs.Reservation
 import Programs.Reservation2
+import Programs.Reservation3
 import Programs.Residency
 import Programs.Residency2
 import Programs.Residency3
@@ -68,6 +69,7 @@ main = hspec $ do
     it "Handles edge-case assignment scenario 1"   $ runTest assignment
     it "Handles edge-case reservation scenario 1"  $ runTest reservation
     it "Handles edge-case reservation scenario 2"  $ runTest reservation2
+    it "Handles edge-case reservation scenario 3"  $ runTest reservation3
     it "Handles edge-case residency scenario 1"    $ runTest residency
     it "Handles edge-case residency scenario 2"    $ runTest residency2
     it "Handles edge-case residency scenario 3"    $ runTest residency3
