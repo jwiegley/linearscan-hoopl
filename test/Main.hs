@@ -40,7 +40,7 @@ import Test.Hspec
 --   expected outputs.
 
 main :: IO ()
-main = hspec $ do
+main = hspec $ parallel $ do
   describe "Sanity tests" sanityTests
   describe "Spill tests" spillTests
   describe "Block tests" blockTests
@@ -80,7 +80,16 @@ main = hspec $ do
     it "Register over-allocation edge-case"        $ runTest overlapped
     it "Restoration after a graph edge split"      $ runTest restoration
 
-  describe "Generated tests" generatedTests
+  describe "Generated tests 0" generatedTests
+  describe "Generated tests 1" generatedTests
+  describe "Generated tests 2" generatedTests
+  describe "Generated tests 3" generatedTests
+  describe "Generated tests 4" generatedTests
+  describe "Generated tests 5" generatedTests
+  describe "Generated tests 6" generatedTests
+  describe "Generated tests 7" generatedTests
+  describe "Generated tests 8" generatedTests
+  describe "Generated tests 9" generatedTests
 
 sanityTests :: SpecWith ()
 sanityTests = do
