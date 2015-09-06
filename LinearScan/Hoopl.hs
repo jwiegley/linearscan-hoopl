@@ -45,13 +45,12 @@ data NodeV n = NodeCO { getNodeCO :: n C O }
              | NodeOC { getNodeOC :: n O C }
 
 blockInfo :: (NodeAlloc nv nr, NonLocal nv, NonLocal nr)
-          => (Label -> Env Int)
-          -> BlockInfo Env (Block nv C C) (Block nr C C)
+          => BlockInfo Env (Block nv C C) (Block nr C C)
                            (NodeV nv) (NodeV nr)
-blockInfo getBlockId = BlockInfo
-    { blockId = getBlockId . entryLabel
+blockInfo = BlockInfo
+    { blockId = unsafeCoerce . entryLabel
 
-    , blockSuccessors = Prelude.mapM getBlockId . successors
+    , blockSuccessors = unsafeCoerce . successors
 
     , splitCriticalEdge = \(BlockCC b m e)
                            (BlockCC next _ _) -> do
@@ -127,8 +126,5 @@ allocateHoopl regs offset slotSize useVerifier entry graph =
 
     go n = evalStateT alloc ([n..], newSpillStack offset slotSize)
       where
-        alloc = allocate regs (blockInfo getBlockId) opInfo useVerifier $
+        alloc = allocate regs blockInfo opInfo useVerifier $
                     postorder_dfs_from body entry
-          where
-            getBlockId :: Hoopl.Label -> Env Int
-            getBlockId = return . unsafeCoerce
