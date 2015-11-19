@@ -9,6 +9,9 @@ module LinearScan.Hoopl.DSL
       -- * Programs
     , ProgramF(..)
     , Program
+      -- * Labels
+    , Labels
+    , getLabel
       -- * Assembly nodes
     , Asm
     , Nodes
@@ -17,17 +20,13 @@ module LinearScan.Hoopl.DSL
     , bodyNode
     , EndNode
     , endNode
-      -- * Labels
-    , Labels
-    , getLabel
+    , LinearScan.Hoopl.DSL.label
+    , jump
       -- * Spill stack
     , SpillStack(..)
     , newSpillStack
     , getStackSlot
     , Env
-      -- * operations
-    , LinearScan.Hoopl.DSL.label
-    , jump
     ) where
 
 import           Compiler.Hoopl as Hoopl hiding ((<*>))
