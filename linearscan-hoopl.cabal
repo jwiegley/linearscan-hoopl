@@ -11,13 +11,21 @@ build-type:    Simple
 cabal-version: >=1.10
 
 description:
-  This module provides a convenience wrapper and a type class, 'NodeAlloc',
-  which makes it much easier to use the @linearscan@ library to allocate
-  registers for Hoople intermediate representations.
+  This module provides two convenience features for Hoopl users that wish to
+  use @linearscan@ for register allocation in their compilers.
   .
-  Additionally, it provides a DSL for construction of assembly language DSLs
-  that compile into Hoople program graphs.  See the tests for a concrete
-  example.
+  First, it defines a type class called 'NodeAlloc'. After defining an
+  instance of this class for your particular graph node type, simply call
+  'LinearScan.Hoopl.allocateHoopl'. This is a simpler interface than using
+  @linearscan@ directly, which requires two records of functions that are more
+  general in nature than the methods of 'NodeAlloc'.
+  .
+  Second, it provides a DSL for constructing assembly language DSLs that
+  compile into Hoople program graphs. See the tests for a concrete example.
+  This is mainly useful for constructing tests of intermediate representations.
+  .
+  Please see the tests for an example of the simple assembly language that is
+  used to test the @linearscan@ allocator.
 
 Source-repository head
   type:     git

@@ -5,7 +5,10 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module LinearScan.Hoopl where
+module LinearScan.Hoopl
+    ( NodeAlloc(..)
+    , allocateHoopl
+    ) where
 
 import           Compiler.Hoopl as Hoopl hiding ((<*>))
 import           Control.Applicative
@@ -24,21 +27,45 @@ import           Unsafe.Coerce
 
 class HooplNode nv => NodeAlloc nv nr | nv -> nr, nr -> nv where
     isCall   :: nv O O -> Bool
+    -- ^ Return @True@ if the operation node represents a call to another
+    -- procedure.
+
     isBranch :: nv O C -> Bool
+    -- ^ Return @True@ if the operation node is a branch at the end of a basic
+    -- block. Often, the only other possibility is a return instruction.
 
     retargetBranch :: nv O C -> Label -> Label -> nv O C
+    -- ^ Given a branching node and a destination label, retarget the branch
+    -- so it goes to the second label in place of the first.
 
     mkLabelOp :: Label -> nv C O
+    -- ^ Construct a label operation.
+
     mkJumpOp  :: Label -> nv O C
+    -- ^ Construct a jump operation to the given label.
 
     getReferences :: nv e x -> [VarInfo]
+    -- ^ Given a node, return its list of 'LinearScan.VarInfo' references.
+
     setRegisters  :: [((VarId, VarKind), PhysReg)] -> nv e x -> Env (nr e x)
+    -- ^ Given a set of register allocations and an operation node, apply
+    -- those allocations within the provided 'Env' environment and produce a
+    -- result node with the allocations applied.
 
     mkMoveOps    :: PhysReg -> VarId -> PhysReg -> Env [nr O O]
+    -- ^ Construct operation(s) to move a variable's value from one register
+    -- to another.
+
     mkSaveOps    :: PhysReg -> VarId -> Env [nr O O]
+    -- ^ Construct operation(s) that spill a variable's value from a register
+    -- to the spill stack.
+
     mkRestoreOps :: VarId -> PhysReg -> Env [nr O O]
+    -- ^ Construct operation(s) that load a variable's value into a register
+    -- from the spill stack.
 
     op1ToString  :: nv e x -> String
+    -- ^ Render the given operation node as a 'String'.
 
 data NodeV n = NodeCO { getNodeCO :: n C O }
              | NodeOO { getNodeOO :: n O O }
@@ -107,14 +134,16 @@ opInfo = OpInfo
            NodeOC n -> op1ToString n
     }
 
-allocateHoopl :: (NodeAlloc nv nr, NonLocal nv, NonLocal nr)
-              => Int          -- ^ Number of machine registers
-              -> Int          -- ^ Offset of the spill stack
-              -> Int          -- ^ Size of spilled register in bytes
-              -> UseVerifier  -- ^ Whether to use allocation verifier
-              -> Label        -- ^ Label of graph entry block
-              -> Graph nv C C -- ^ Program graph
-              -> (String, Either [String] (Graph nr C C))
+allocateHoopl
+    :: (NodeAlloc nv nr, NonLocal nv, NonLocal nr)
+    => Int          -- ^ Number of machine registers available
+    -> Int          -- ^ Offset of the spill stack in bytes
+    -> Int          -- ^ Size of a spilled register in bytes
+    -> UseVerifier  -- ^ Whether to use the runtime allocation verifier
+    -> Label        -- ^ Entry label of the program graph
+    -> Graph nv C C -- ^ Hoopl program graph
+    -> (String, Either [String] (Graph nr C C))
+                   -- ^ Status dump and allocated blocks, or error w/ context
 allocateHoopl regs offset slotSize useVerifier entry graph =
     fmap newGraph <$> runIdentity (go (1 + IM.size (unsafeCoerce body)))
   where
