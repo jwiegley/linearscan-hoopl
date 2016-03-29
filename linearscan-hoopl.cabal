@@ -56,9 +56,31 @@ test-suite test
     Assembly
     Normal
     Generated
+    Programs.Allocation
+    Programs.Allocation2
+    Programs.Allocation3
+    Programs.Allocation4
+    Programs.Allocation5
+    Programs.Allocation6
+    Programs.Assignment
     Programs.Blocked
+    Programs.BranchAlloc
     Programs.Exhaustion
+    Programs.Incoming
     Programs.Ordered
+    Programs.Overcommit
+    Programs.Overlapped
+    Programs.Reservation
+    Programs.Reservation2
+    Programs.Reservation3
+    Programs.Reservation4
+    Programs.Residency
+    Programs.Residency2
+    Programs.Residency3
+    Programs.Restoration
+    Programs.ReturnAssign
+    Programs.Returned
+    Programs.UponEntry
   build-depends: 
       base >=3
     , hspec              >= 1.4.4
