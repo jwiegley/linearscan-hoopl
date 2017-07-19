@@ -16,20 +16,24 @@ asmTestLiteral :: UseVerifier -> Int -> Program (Node IRVar) -> Maybe String
                -> Expectation
 asmTestLiteral verif regs program mexpected = do
     let (graph, entry) = runSimpleUniqueMonad $ compile "entry" program
+    putStrLn $ "---- Parsed ----\n" ++ showGraph show graph
+    case mexpected of
+        Nothing -> return ()
+        Just expected -> putStrLn $ "---- Expecting ----\n" ++ expected
     case allocateHoopl regs 0 8 verif entry graph of
         (dump, Left errs) ->
-            error $ "Allocation failed: " ++ intercalate "\n" errs ++ "\n"
-                ++ dump
-        (dump, Right graph') -> case mexpected of
-            Nothing -> return ()
-            Just expected ->
-                let g = showGraph show graph' in
-                catch (g `shouldBe` expected) $ \e -> do
-                    putStrLn $ "---- Parsed ----\n" ++ showGraph show graph
-                    putStrLn $ "---- Expecting ----\n" ++ expected
+            error $ "Allocation failed: "
+                 ++ intercalate "\n" errs ++ "\n" ++ dump
+        (dump, Right graph') -> do
+            let g = showGraph show graph'
+            let display = do
                     putStrLn $ "---- Compiled  ----\n" ++ g
                     putStrLn "-------------------"
                     putStrLn $ "Allocation result:\n" ++ dump
+            case mexpected of
+                Nothing -> display
+                Just expected -> catch (g `shouldBe` expected) $ \e -> do
+                    display
                     throwIO (e :: SomeException)
 
 asmTest :: Int
