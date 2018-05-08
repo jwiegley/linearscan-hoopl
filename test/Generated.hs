@@ -36,11 +36,11 @@ instance Arbitrary (Instruction IRVar) where
 
 instance Arbitrary (Node IRVar O C) where
     arbitrary = sized $ \n -> frequency
-        [ (1, Jump <$> unsafeCoerce <$> (choose (1,n) :: Gen Int))
+        [ (1, Jump <$> (choose (1,n) :: Gen Int))
         , (1, Branch <$> pure Zero
                      <*> arbitrary
-                     <*> (unsafeCoerce <$> (choose (1,n) :: Gen Int))
-                     <*> (unsafeCoerce <$> (choose (1,n) :: Gen Int)))
+                     <*> (choose (1,n) :: Gen Int)
+                     <*> (choose (1,n) :: Gen Int))
         , (1, pure $ ReturnInstr [] Nop)
         ]
 
